@@ -9,22 +9,27 @@
   --accent-blue: #2563eb;
   --accent-green: #16a34a;
   --border-color: #cbd5e1;
-  --bg-page: #f8fafc;
+  --bg-page: #f1f5f9;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
   background-color: var(--bg-page);
+  font-family: 'Inter', sans-serif;
   color: #1e293b;
-  width: 100vw;
-  max-width: 100%;
-  overflow-x: hidden;
 }
 
-/* Full Screen Fluid Layout */
+/* 100% True Full-Screen Edge-to-Edge Fluid Layout */
 .main-container {
   width: 100% !important;
   max-width: 100% !important;
+  margin: 0 !important;
+  padding: 8px 12px 16px 12px !important;
+  box-sizing: border-box !important;
 }
 
 /* CA Firm Letterhead Header Typography */
@@ -67,10 +72,10 @@ body {
   background: #94a3b8;
 }
 
-/* Table Specific Styling */
+/* Table Specific Styling (100% Full Width) */
 .audit-table {
-  width: 100%;
-  table-layout: auto;
+  width: 100% !important;
+  border-collapse: collapse !important;
 }
 
 .audit-table th {
@@ -114,7 +119,7 @@ body {
   width: 100%;
   border: 1px solid transparent;
   background: transparent;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 4px;
   transition: all 0.15s ease;
   color: inherit;
