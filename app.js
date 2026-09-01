@@ -579,14 +579,34 @@ function getClientPendingCount(client) {
 }
 
 function getActiveClient() {
+  if (!appData.clients || !Array.isArray(appData.clients) || appData.clients.length === 0) {
+    const defaultId = 'client-' + Date.now();
+    appData.clients = [
+      {
+        id: defaultId,
+        name: 'ENTER CLIENT NAME',
+        fy: 'FINANCIAL YEAR 2025-26',
+        tasks: []
+      }
+    ];
+    appData.activeClientId = defaultId;
+    return appData.clients[0];
+  }
+
   let client = appData.clients.find(c => c.id === appData.activeClientId);
-  if (!client && appData.clients.length > 0) {
+  if (!client) {
     appData.activeClientId = appData.clients[0].id;
     client = appData.clients[0];
   }
+
+  if (!Array.isArray(client.tasks)) {
+    client.tasks = [];
+  }
+
   return client;
 }
 
+// Master Render
 function renderAll() {
   renderClientTabs();
   renderHeader();
@@ -930,16 +950,23 @@ function toggleSelectAllTasks(forcedState) {
   renderAll();
 }
 
+// Insert Task After a Specific Task (Plus Button)
 function insertTaskAfter(taskId) {
   const client = getActiveClient();
   if (!client) return;
 
-  const currentFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  if (!Array.isArray(client.tasks)) {
+    client.tasks = [];
+  }
+
+  const rawFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
+
   const newTask = {
-    id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
     checked: false,
     particulars: '',
-    period: currentFY,
+    period: `FY ${cleanYear}`,
     remark: ''
   };
 
@@ -950,6 +977,27 @@ function insertTaskAfter(taskId) {
     client.tasks.push(newTask);
   }
 
+  // If filtered to 'completed', auto-switch to 'all' so new pending task is visible immediately!
+  if (currentFilter === 'completed') {
+    currentFilter = 'all';
+    document.querySelectorAll('[data-filter]').forEach(b => {
+      if (b.getAttribute('data-filter') === 'all') {
+        b.classList.add('bg-blue-600', 'text-white', 'shadow');
+        b.classList.remove('bg-white', 'text-slate-600');
+      } else {
+        b.classList.remove('bg-blue-600', 'text-white', 'shadow');
+        b.classList.add('bg-white', 'text-slate-600');
+      }
+    });
+  }
+
+  // Clear task search box if active so new row is not filtered out
+  if (searchQuery.trim()) {
+    searchQuery = '';
+    const searchInput = document.getElementById('search-tasks');
+    if (searchInput) searchInput.value = '';
+  }
+
   saveData();
   renderAll();
 
@@ -958,35 +1006,72 @@ function insertTaskAfter(taskId) {
     const newRowIndex = targetIndex !== -1 ? targetIndex + 1 : rows.length - 1;
     if (rows[newRowIndex]) {
       const input = rows[newRowIndex].querySelector('input[type="text"]');
-      if (input) input.focus();
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
   }, 60);
 }
 
-function addSingleTask(particulars = '', period = 'FY 2025-26', remark = '') {
+// Task CRUD Operations
+function addSingleTask(particulars = '', period = '', remark = '') {
   const client = getActiveClient();
   if (!client) return;
 
-  const currentFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  if (!Array.isArray(client.tasks)) {
+    client.tasks = [];
+  }
+
+  const rawFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
 
   const newTask = {
-    id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
     checked: false,
     particulars: particulars || '',
-    period: period || currentFY,
+    period: period || `FY ${cleanYear}`,
     remark: remark || ''
   };
 
   client.tasks.push(newTask);
+
+  // If filtered to 'completed', auto-switch to 'all' so new pending task is visible immediately!
+  if (currentFilter === 'completed') {
+    currentFilter = 'all';
+    document.querySelectorAll('[data-filter]').forEach(b => {
+      if (b.getAttribute('data-filter') === 'all') {
+        b.classList.add('bg-blue-600', 'text-white', 'shadow');
+        b.classList.remove('bg-white', 'text-slate-600');
+      } else {
+        b.classList.remove('bg-blue-600', 'text-white', 'shadow');
+        b.classList.add('bg-white', 'text-slate-600');
+      }
+    });
+  }
+
+  // Clear task search query so new empty row is not filtered out
+  if (searchQuery.trim()) {
+    searchQuery = '';
+    const searchInput = document.getElementById('search-tasks');
+    if (searchInput) searchInput.value = '';
+  }
+
   saveData();
   renderAll();
 
+  // Auto focus into the newly added row
   setTimeout(() => {
-    const inputs = taskTableBody.querySelectorAll('input[type="text"]');
-    if (inputs.length > 0) {
-      inputs[inputs.length - 3].focus();
+    const rows = taskTableBody.querySelectorAll('tr');
+    if (rows.length > 0) {
+      const lastRow = rows[rows.length - 1];
+      const input = lastRow.querySelector('input[type="text"]');
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
-  }, 50);
+  }, 60);
 }
 
 function toggleTaskStatus(taskId) {
@@ -1353,11 +1438,12 @@ function fullAppResetPrompt() {
 
   const confirm2 = prompt("To confirm full reset, please type 'RESET' in uppercase below:");
   if (confirm2 && confirm2.trim().toUpperCase() === 'RESET') {
+    const freshId = 'client-' + Date.now();
     appData = {
-      activeClientId: 'client-1',
+      activeClientId: freshId,
       clients: [
         {
-          id: 'client-' + Date.now(),
+          id: freshId,
           name: 'ENTER CLIENT NAME',
           fy: 'FINANCIAL YEAR 2025-26',
           tasks: []
