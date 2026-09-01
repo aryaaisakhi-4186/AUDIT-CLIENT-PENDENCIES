@@ -319,6 +319,7 @@
             title="Click to edit Client Name directly"
             placeholder="ENTER CLIENT NAME"
             class="client-name-title text-2xl sm:text-4xl font-black text-slate-950 tracking-tight uppercase text-center w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-none transition py-1 rounded"
+            oninput="updateCurrentClientName(this.value)"
             onchange="updateCurrentClientName(this.value)"
           />
         </div>
@@ -338,6 +339,7 @@
             placeholder="2025-26"
             title="Type Financial Year here (e.g. 2025-26, 2024-25)"
             class="bg-slate-800 text-amber-400 font-black px-3 py-0.5 rounded-full border border-amber-500/50 text-center w-28 sm:w-32 focus:bg-slate-950 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition cursor-text text-sm sm:text-base tracking-wider"
+            oninput="updateCurrentClientYearOnly(this.value)"
             onchange="updateCurrentClientYearOnly(this.value)"
           />
         </div>

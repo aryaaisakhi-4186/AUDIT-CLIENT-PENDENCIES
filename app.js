@@ -252,8 +252,37 @@ function loadData() {
   }
 }
 
-// Save current state to LocalStorage + Push directly to Firebase Online Cloud
+let cloudSyncTimeout = null;
+
+// Real-time Live Cloud Auto-Sync (Debounced on keystroke for fast typing)
+function saveDataLive() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  } catch (err) {
+    console.error('Error saving data to storage:', err);
+  }
+
+  if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+
+  updateCloudSyncIndicator('syncing');
+  cloudSyncTimeout = setTimeout(() => {
+    if (firebaseDataRef && !isSyncingFromCloud) {
+      firebaseDataRef.set(appData)
+        .then(() => {
+          updateCloudSyncIndicator('connected');
+        })
+        .catch(err => {
+          console.error('Firebase online live save error:', err);
+          updateCloudSyncIndicator('error');
+        });
+    }
+  }, 350); // 350ms real-time cloud sync debounce
+}
+
+// Immediate Cloud Save (For checkboxes, adding/deleting rows, client changes)
 function saveData() {
+  if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   } catch (err) {
@@ -265,7 +294,7 @@ function saveData() {
     updateCloudSyncIndicator('syncing');
     firebaseDataRef.set(appData)
       .then(() => {
-        setTimeout(() => updateCloudSyncIndicator('connected'), 300);
+        setTimeout(() => updateCloudSyncIndicator('connected'), 250);
       })
       .catch(err => {
         console.error('Firebase online save error:', err);
@@ -275,7 +304,7 @@ function saveData() {
 }
 
 // =========================================================================
-// ☁️ 100% AUTOMATIC GOOGLE FIREBASE REALTIME CLOUD INTEGRATION
+// ☁️ 100% AUTOMATIC REAL-TIME FIREBASE CLOUD DATABASE ENGINE
 // =========================================================================
 
 function initFirebaseCloud() {
@@ -297,19 +326,58 @@ function initFirebaseCloud() {
     firebaseDB = firebase.database();
     firebaseDataRef = firebaseDB.ref('audit_aryassociates_live_data');
 
+    // Monitor Realtime Online Connection Presence
+    firebaseDB.ref('.info/connected').on('value', (snap) => {
+      if (snap.val() === true) {
+        isCloudConnected = true;
+        updateCloudSyncIndicator('connected');
+      } else {
+        updateCloudSyncIndicator('syncing');
+      }
+    });
+
     updateCloudSyncIndicator('syncing');
 
+    // Bi-directional Real-Time Listener (Instant Sync across all devices)
     firebaseDataRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
-      if (cloudData && cloudData.clients && cloudData.clients.length > 0) {
-        isSyncingFromCloud = true;
-        appData = cloudData;
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-        } catch (e) {}
-        renderAll();
-        isSyncingFromCloud = false;
+      if (cloudData && cloudData.clients && Array.isArray(cloudData.clients) && cloudData.clients.length > 0) {
+        const currentJson = JSON.stringify(appData);
+        const cloudJson = JSON.stringify(cloudData);
+
+        // Only re-render if data is actually different (avoids cursor jumping)
+        if (currentJson !== cloudJson) {
+          isSyncingFromCloud = true;
+          appData = cloudData;
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          } catch (e) {}
+
+          const activeEl = document.activeElement;
+          const activeCol = activeEl ? activeEl.getAttribute('data-col') : null;
+          const activeRow = activeEl ? activeEl.closest('tr') : null;
+          const rowIndex = activeRow ? Array.from(taskTableBody.querySelectorAll('tr')).indexOf(activeRow) : -1;
+          const selStart = (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) ? activeEl.selectionStart : null;
+
+          renderAll();
+
+          // Restore cursor focus seamlessly if typing
+          if (activeCol && rowIndex !== -1) {
+            const rows = taskTableBody.querySelectorAll('tr');
+            if (rows[rowIndex]) {
+              const targetInput = rows[rowIndex].querySelector(`[data-col="${activeCol}"]`);
+              if (targetInput) {
+                targetInput.focus();
+                if (selStart !== null) {
+                  targetInput.setSelectionRange(selStart, selStart);
+                }
+              }
+            }
+          }
+          isSyncingFromCloud = false;
+        }
       } else if (!cloudData) {
+        // Initial cloud database seed
         firebaseDataRef.set(appData);
       }
       isCloudConnected = true;
@@ -913,20 +981,19 @@ function renderTasksTable() {
         ${actualIndex}
       </td>
 
-      <!-- PARTICULARS (Auto-expanding multi-line textarea) -->
+      <!-- PARTICULARS (Auto-expanding multi-line textarea with Keystroke Live Sync) -->
       <td class="px-2 py-1.5" style="vertical-align: top;">
         <textarea 
           rows="1"
           data-col="particulars"
           placeholder="Enter audit requirement or pending document..."
           class="table-textarea font-medium text-slate-900 text-sm ${task.checked ? 'line-through text-slate-600 font-bold' : ''}"
-          onchange="updateTaskProperty('${task.id}', 'particulars', this.value)"
-          oninput="autoResizeTextarea(this)"
+          oninput="autoResizeTextarea(this); updateTaskPropertyLive('${task.id}', 'particulars', this.value)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'particulars')"
         >${escapeHtml(task.particulars)}</textarea>
       </td>
 
-      <!-- PERIOD -->
+      <!-- PERIOD (Keystroke Live Sync) -->
       <td class="px-2 py-1.5" style="vertical-align: top;">
         <input 
           type="text" 
@@ -934,20 +1001,19 @@ function renderTasksTable() {
           value="${escapeHtml(task.period)}" 
           placeholder="e.g. FY 2025-26, Q3"
           class="table-input text-slate-700 text-sm font-semibold"
-          onchange="updateTaskProperty('${task.id}', 'period', this.value)"
+          oninput="updateTaskPropertyLive('${task.id}', 'period', this.value)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'period')"
         />
       </td>
 
-      <!-- REMARK (Auto-expanding multi-line textarea) -->
+      <!-- REMARK (Auto-expanding multi-line textarea with Keystroke Live Sync) -->
       <td class="px-2 py-1.5" style="vertical-align: top;">
         <textarea 
           rows="1"
           data-col="remark"
           placeholder="Add remarks / follow-up status..."
           class="table-textarea text-slate-700 text-sm font-medium"
-          onchange="updateTaskProperty('${task.id}', 'remark', this.value)"
-          oninput="autoResizeTextarea(this)"
+          oninput="autoResizeTextarea(this); updateTaskPropertyLive('${task.id}', 'remark', this.value)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'remark')"
         >${escapeHtml(task.remark)}</textarea>
       </td>
@@ -1288,6 +1354,19 @@ function toggleTaskStatus(taskId) {
     task.checked = !task.checked;
     saveData();
     renderAll();
+  }
+}
+
+// Live Keystroke Property Updater (Real-time Cloud Sync)
+function updateTaskPropertyLive(taskId, field, value) {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const task = client.tasks.find(t => t.id === taskId);
+  if (task) {
+    task[field] = value;
+    saveDataLive();
+    updateStats();
   }
 }
 
