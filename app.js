@@ -1829,23 +1829,52 @@ function applyAuthState() {
     updateAuthUI();
   } else {
     // Logged off: show ONLY start login page, hide workspace
-   function updateAuthUI() {
+    if (loginView) loginView.classList.remove('hidden');
+    if (mainApp) mainApp.classList.add('hidden');
+  }
+}
+
+function updateAuthUI() {
   const badgeText = document.getElementById('user-role-text');
   const roleDisplay = document.getElementById('auth-current-role-display');
-  if (badgeText && currentAuthUser) {
-    if (currentAuthUser.role === 'admin') {
-      badgeText.textContent = (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin";
+  const resetBtn = document.getElementById('btn-reset-app');
+  const userMasterBtn = document.getElementById('btn-user-master');
+  const deleteClientBtn = document.getElementById('btn-delete-client');
+
+  if (!currentAuthUser) return;
+
+  const isAdmin = currentAuthUser.role === 'admin';
+
+  // Role Badge Text & Color
+  if (badgeText) {
+    if (isAdmin) {
+      const adminName = (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin";
+      badgeText.textContent = `👑 ${adminName}`;
       badgeText.className = "text-amber-400 font-extrabold";
     } else {
       const displayName = currentAuthUser.name || `Staff (${currentAuthUser.mobile.slice(-4)})`;
-      badgeText.textContent = displayName;
+      badgeText.textContent = `👤 ${displayName}`;
       badgeText.className = "text-blue-300 font-bold";
     }
   }
-  if (roleDisplay && currentAuthUser) {
-    roleDisplay.textContent = currentAuthUser.role === 'admin' 
-      ? `${(appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin"} (Full Rights)` 
-      : `${currentAuthUser.name || 'Member'} (${currentAuthUser.mobile})`;
+
+  // Auth Modal Current Role
+  if (roleDisplay) {
+    roleDisplay.textContent = isAdmin 
+      ? `${(appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin"} (Full Admin Rights)` 
+      : `${currentAuthUser.name || 'Staff Member'} (${currentAuthUser.mobile})`;
+  }
+
+  // 🔒 STRICT ROLE-BASED ACCESS CONTROL (RBAC)
+  // Admin gets ALL rights; Members get ONLY necessary audit rights
+  if (resetBtn) {
+    resetBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  }
+  if (userMasterBtn) {
+    userMasterBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  }
+  if (deleteClientBtn) {
+    deleteClientBtn.style.display = isAdmin ? 'inline-flex' : 'none';
   }
 }
 
