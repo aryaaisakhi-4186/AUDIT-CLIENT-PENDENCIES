@@ -12,4 +12,4 @@ echo.
 echo ========================================================
 echo  SUCCESS: All files have been pushed to GitHub!
 echo ========================================================
-pause
+timeout /t 2 >nul
