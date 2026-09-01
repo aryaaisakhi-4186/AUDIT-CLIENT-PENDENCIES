@@ -1,10 +1,12 @@
 /**
  * AUDIT-2026: Client Pendencies & Audit Requirements Management App
  * Designed for M/S. ARYA ASSOCIATES
+ * Integrated with Google Firebase Realtime Cloud Database for Multi-Device Live Sync
  */
 
 const STORAGE_KEY = 'audit_2026_client_pendencies_db';
 const ALARM_STORAGE_KEY = 'audit_2026_alarm_settings';
+const FIREBASE_CONFIG_KEY = 'audit_2026_firebase_config';
 
 // Standard Statutory Audit Requirements Template for Quick-Add
 const STANDARD_AUDIT_CHECKLIST = [
@@ -61,21 +63,28 @@ const DEFAULT_DATA = {
 // Default Alarm Settings (Daily 11:00 AM)
 const DEFAULT_ALARM_SETTINGS = {
   enabled: true,
-  time: '11:00', // 11:00 AM
+  time: '11:00',
   lastTriggeredDate: ''
 };
 
 // App State
 let appData = { ...DEFAULT_DATA };
 let alarmSettings = { ...DEFAULT_ALARM_SETTINGS };
-let currentFilter = 'all'; // Task filter: 'all', 'pending', 'completed'
+let currentFilter = 'all';
 let searchQuery = '';
 let clientSearchQuery = '';
-let clientStatusFilter = 'pending'; // 'pending' (Hides completed clients), 'all', 'completed'
-let whatsappFilterMode = 'pending'; // 'pending' or 'all'
+let clientStatusFilter = 'pending';
+let whatsappFilterMode = 'pending';
 let audioCtx = null;
 let alarmIntervalId = null;
 let isAlarmRingingNow = false;
+
+// Cloud Sync State
+let firebaseApp = null;
+let firebaseDB = null;
+let firebaseDataRef = null;
+let isCloudConnected = false;
+let isSyncingFromCloud = false;
 
 // DOM Elements
 const clientTabsContainer = document.getElementById('client-tabs');
@@ -90,11 +99,15 @@ const progressPercentEl = document.getElementById('progress-percent');
 const clientSearchInputEl = document.getElementById('client-search-input');
 const pendingClientsBadgeEl = document.getElementById('pending-clients-badge');
 const headerAlarmBadgeEl = document.getElementById('header-alarm-badge');
+const cloudStatusBadgeEl = document.getElementById('cloud-status-badge');
+const cloudStatusTextEl = document.getElementById('cloud-status-text');
+const cloudIndicatorDotEl = document.getElementById('cloud-indicator-dot');
 
 // Initialize Application
 function initApp() {
   loadData();
   loadAlarmSettings();
+  initFirebaseCloud();
   renderAll();
   setupEventListeners();
   initAlarmMonitor();
@@ -116,14 +129,229 @@ function loadData() {
   }
 }
 
-// Save current state to LocalStorage
+// Save current state to LocalStorage + Push to Firebase Cloud
 function saveData() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   } catch (err) {
     console.error('Error saving data to storage:', err);
   }
+
+  // Push to Firebase Realtime Cloud Database if connected
+  if (isCloudConnected && firebaseDataRef && !isSyncingFromCloud) {
+    updateCloudSyncIndicator('syncing');
+    firebaseDataRef.set(appData)
+      .then(() => {
+        setTimeout(() => updateCloudSyncIndicator('connected'), 400);
+      })
+      .catch(err => {
+        console.error('Firebase save error:', err);
+        updateCloudSyncIndicator('error');
+      });
+  }
 }
+
+// =========================================================================
+// ☁️ GOOGLE FIREBASE REALTIME CLOUD DATABASE INTEGRATION
+// =========================================================================
+
+function initFirebaseCloud() {
+  const savedConfig = localStorage.getItem(FIREBASE_CONFIG_KEY);
+  if (!savedConfig) {
+    updateCloudSyncIndicator('disconnected');
+    return;
+  }
+
+  try {
+    const config = JSON.parse(savedConfig);
+    if (!config.apiKey || !config.projectId) {
+      updateCloudSyncIndicator('disconnected');
+      return;
+    }
+
+    // Initialize or get existing app
+    if (!firebase.apps.length) {
+      firebaseApp = firebase.initializeApp(config);
+    } else {
+      firebaseApp = firebase.app();
+    }
+
+    firebaseDB = firebase.database();
+    firebaseDataRef = firebaseDB.ref('audit_aryassociates_live_data');
+
+    updateCloudSyncIndicator('syncing');
+
+    // Realtime Cloud Listener: When data changes on mobile/laptop, update instantly!
+    firebaseDataRef.on('value', (snapshot) => {
+      const cloudData = snapshot.val();
+      if (cloudData && cloudData.clients && cloudData.clients.length > 0) {
+        isSyncingFromCloud = true;
+        appData = cloudData;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        } catch (e) {}
+        renderAll();
+        isSyncingFromCloud = false;
+      } else if (!cloudData) {
+        // If cloud database is empty, seed it with current local data
+        firebaseDataRef.set(appData);
+      }
+      isCloudConnected = true;
+      updateCloudSyncIndicator('connected');
+    }, (err) => {
+      console.warn('Firebase connection warning:', err);
+      isCloudConnected = false;
+      updateCloudSyncIndicator('error');
+    });
+
+  } catch (err) {
+    console.error('Firebase init error:', err);
+    updateCloudSyncIndicator('error');
+  }
+}
+
+function updateCloudSyncIndicator(status) {
+  if (!cloudStatusBadgeEl || !cloudStatusTextEl || !cloudIndicatorDotEl) return;
+
+  if (status === 'connected') {
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-md text-xs font-extrabold shadow transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+    cloudStatusTextEl.textContent = "☁️ Cloud Live";
+  } else if (status === 'syncing') {
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 rounded-md text-xs font-bold shadow transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-amber-400 animate-spin";
+    cloudStatusTextEl.textContent = "🔄 Syncing...";
+  } else if (status === 'error') {
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-500/40 rounded-md text-xs font-bold shadow transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-red-400";
+    cloudStatusTextEl.textContent = "⚠️ Cloud Error";
+  } else {
+    // Disconnected / Local Mode
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-md text-xs font-semibold shadow transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-slate-400";
+    cloudStatusTextEl.textContent = "☁️ Cloud Setup";
+  }
+}
+
+// Open Cloud Setup Modal
+function openCloudModal() {
+  const modal = document.getElementById('cloud-modal');
+  const configInput = document.getElementById('firebase-config-input');
+  const disconnectBtn = document.getElementById('cloud-disconnect-btn');
+  const statusBox = document.getElementById('cloud-status-box');
+
+  const savedConfig = localStorage.getItem(FIREBASE_CONFIG_KEY);
+
+  if (isCloudConnected) {
+    statusBox.className = "p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center justify-between text-xs font-bold";
+    statusBox.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🟢</span>
+        <div>
+          <p class="font-extrabold text-sm text-emerald-900">Google Firebase Cloud is Active!</p>
+          <p class="text-[11px] text-emerald-700 font-normal">Real-time bi-directional sync active across all laptops & phones.</p>
+        </div>
+      </div>
+    `;
+    if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+  } else {
+    statusBox.className = "p-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 flex items-center justify-between text-xs font-bold";
+    statusBox.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-xl">💾</span>
+        <div>
+          <p class="font-extrabold text-sm text-amber-900">Running in Local Storage Mode</p>
+          <p class="text-[11px] text-amber-700 font-normal">Connect Firebase below to enable multi-device real-time sync.</p>
+        </div>
+      </div>
+    `;
+    if (disconnectBtn) disconnectBtn.classList.add('hidden');
+  }
+
+  if (savedConfig && configInput) {
+    try {
+      configInput.value = JSON.stringify(JSON.parse(savedConfig), null, 2);
+    } catch (e) {
+      configInput.value = savedConfig;
+    }
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeCloudModal() {
+  const modal = document.getElementById('cloud-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Parse and Save Firebase Config
+function saveAndConnectFirebase() {
+  const configInput = document.getElementById('firebase-config-input');
+  if (!configInput || !configInput.value.trim()) {
+    alert('Please paste your Firebase configuration first.');
+    return;
+  }
+
+  let rawText = configInput.value.trim();
+
+  // Clean JS variable assignments if user pasted `const firebaseConfig = { ... };`
+  let jsonString = rawText;
+  if (rawText.includes('{') && rawText.includes('}')) {
+    const startIndex = rawText.indexOf('{');
+    const endIndex = rawText.lastIndexOf('}');
+    jsonString = rawText.substring(startIndex, endIndex + 1);
+  }
+
+  // Convert JS object format to valid JSON (quotes around keys if missing)
+  try {
+    let parsedConfig;
+    try {
+      parsedConfig = JSON.parse(jsonString);
+    } catch (e) {
+      // Evaluate safe object
+      const safeFn = new Function(`return (${jsonString})`);
+      parsedConfig = safeFn();
+    }
+
+    if (!parsedConfig || !parsedConfig.apiKey || !parsedConfig.projectId) {
+      alert('Invalid Firebase configuration. Missing apiKey or projectId.');
+      return;
+    }
+
+    // Ensure databaseURL is present for Realtime Database
+    if (!parsedConfig.databaseURL) {
+      parsedConfig.databaseURL = `https://${parsedConfig.projectId}-default-rtdb.firebaseio.com`;
+    }
+
+    localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(parsedConfig));
+    
+    closeCloudModal();
+    alert('🚀 Connecting to Google Firebase Cloud...');
+    
+    // Initialize
+    initFirebaseCloud();
+
+  } catch (err) {
+    alert('Could not parse Firebase config. Please ensure you copied the entire firebaseConfig object from Firebase Console.');
+  }
+}
+
+function disconnectFirebaseCloud() {
+  if (confirm('Disconnect from Firebase Cloud? App will switch back to local storage.')) {
+    localStorage.removeItem(FIREBASE_CONFIG_KEY);
+    isCloudConnected = false;
+    if (firebaseDataRef) {
+      firebaseDataRef.off();
+    }
+    updateCloudSyncIndicator('disconnected');
+    closeCloudModal();
+    alert('Cloud Database disconnected.');
+  }
+}
+
+// =========================================================================
+// STANDARD APP FUNCTIONS
+// =========================================================================
 
 // Load Alarm Settings
 function loadAlarmSettings() {
@@ -152,7 +380,7 @@ function saveAlarmSettings() {
 function updateAlarmHeaderBadge() {
   if (!headerAlarmBadgeEl) return;
   if (alarmSettings.enabled) {
-    headerAlarmBadgeEl.innerHTML = `⏰ ${alarmSettings.time} AM Reminder`;
+    headerAlarmBadgeEl.innerHTML = `⏰ ${alarmSettings.time} AM`;
     headerAlarmBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-md text-xs shadow transition cursor-pointer";
   } else {
     headerAlarmBadgeEl.innerHTML = `⏰ Alarm (OFF)`;
@@ -271,7 +499,6 @@ function renderHeader() {
     clientNameInput.value = client.name;
   }
   if (fyYearInput) {
-    // Extract year only (e.g., "2025-26" from "FINANCIAL YEAR 2025-26" or "2025-26")
     const rawFY = client.fy || '2025-26';
     const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim();
     fyYearInput.value = cleanYear || '2025-26';
@@ -436,7 +663,6 @@ function renderTasksTable() {
       <!-- ACTIONS: [+] | [▲] | [▼] | [🗑️] -->
       <td class="px-2 py-2 text-center w-28 no-print action-cell">
         <div class="flex items-center justify-center gap-1">
-          <!-- [+] Plus button to add new line immediately below -->
           <button 
             onclick="insertTaskAfter('${task.id}')" 
             title="Add New Line Below (+)" 
@@ -544,7 +770,6 @@ function insertTaskAfter(taskId) {
 
   const targetIndex = client.tasks.findIndex(t => t.id === taskId);
   if (targetIndex !== -1) {
-    // Insert right after current row
     client.tasks.splice(targetIndex + 1, 0, newTask);
   } else {
     client.tasks.push(newTask);
@@ -553,7 +778,6 @@ function insertTaskAfter(taskId) {
   saveData();
   renderAll();
 
-  // Focus on the newly inserted row's Particulars input
   setTimeout(() => {
     const rows = taskTableBody.querySelectorAll('tr');
     const newRowIndex = targetIndex !== -1 ? targetIndex + 1 : rows.length - 1;
@@ -724,10 +948,9 @@ function deleteCurrentClient() {
 }
 
 // =========================================================================
-// ⏰ 11:00 AM DAILY REMINDER & ALARM SYSTEM (Web Audio & Notifications)
+// ⏰ 11:00 AM DAILY REMINDER & ALARM SYSTEM
 // =========================================================================
 
-// Synthesize pleasant bell/chime sound using Web Audio API (Offline, no mp3 needed)
 function playAlarmChime() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -739,16 +962,14 @@ function playAlarmChime() {
 
     const now = audioCtx.currentTime;
     
-    // Play a sequence of 3 melodious ringing chimes
     const chimeFrequencies = [
-      { f1: 659.25, f2: 880.00, time: 0.0 }, // E5, A5
-      { f1: 783.99, f2: 1046.50, time: 0.35 }, // G5, C6
-      { f1: 880.00, f2: 1318.51, time: 0.70 }, // A5, E6
-      { f1: 1046.50, f2: 1567.98, time: 1.10 } // C6, G6
+      { f1: 659.25, f2: 880.00, time: 0.0 },
+      { f1: 783.99, f2: 1046.50, time: 0.35 },
+      { f1: 880.00, f2: 1318.51, time: 0.70 },
+      { f1: 1046.50, f2: 1567.98, time: 1.10 }
     ];
 
     chimeFrequencies.forEach(chord => {
-      // Tone 1
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'triangle';
@@ -762,7 +983,6 @@ function playAlarmChime() {
       osc1.start(now + chord.time);
       osc1.stop(now + chord.time + 0.55);
 
-      // Tone 2 (Harmonic)
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'sine';
@@ -782,7 +1002,6 @@ function playAlarmChime() {
   }
 }
 
-// Play repeated alarm sound for 12 seconds
 function startRingingAlarm() {
   if (isAlarmRingingNow) return;
   isAlarmRingingNow = true;
@@ -797,7 +1016,6 @@ function startRingingAlarm() {
     }
   }, 1400);
 
-  // Show in-app banner
   showAlarmBanner();
 }
 
@@ -810,9 +1028,7 @@ function stopRingingAlarm() {
   hideAlarmBanner();
 }
 
-// Initialize Daily 11:00 AM Alarm Monitor
 function initAlarmMonitor() {
-  // Check every 10 seconds
   setInterval(() => {
     if (!alarmSettings.enabled) return;
 
@@ -822,7 +1038,6 @@ function initAlarmMonitor() {
     const currentTimeStr = `${hours}:${minutes}`;
     const todayDateStr = now.toISOString().slice(0, 10);
 
-    // Target Time (e.g. "11:00")
     if (currentTimeStr === alarmSettings.time && alarmSettings.lastTriggeredDate !== todayDateStr) {
       alarmSettings.lastTriggeredDate = todayDateStr;
       saveAlarmSettings();
@@ -831,19 +1046,15 @@ function initAlarmMonitor() {
   }, 10000);
 }
 
-// Trigger Daily Alarm
 function triggerDaily11AMAlarm() {
-  // 1. Play Sound Alarm
   startRingingAlarm();
 
-  // 2. Count Pending clients & tasks
   const pendingClients = appData.clients.filter(c => !isClientCompleted(c));
   let totalPendingTasks = 0;
   pendingClients.forEach(c => {
     totalPendingTasks += getClientPendingCount(c);
   });
 
-  // 3. Desktop Browser Notification
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('⏰ M/S. ARYA ASSOCIATES - 11:00 AM Audit Reminder', {
       body: `Daily 11:00 AM Reminder: You have ${pendingClients.length} client(s) with ${totalPendingTasks} pending audit requirement(s) today!`,
@@ -853,7 +1064,6 @@ function triggerDaily11AMAlarm() {
   }
 }
 
-// Show In-App Alarm Popup Banner
 function showAlarmBanner() {
   const banner = document.getElementById('alarm-trigger-banner');
   const countSpan = document.getElementById('alarm-pending-client-count');
@@ -869,7 +1079,6 @@ function hideAlarmBanner() {
   if (banner) banner.classList.add('hidden');
 }
 
-// Open Alarm Settings Modal
 function openAlarmModal() {
   const modal = document.getElementById('alarm-modal');
   const timeInput = document.getElementById('alarm-time-input');
@@ -900,7 +1109,6 @@ function saveAlarmModalSettings() {
 
 function testAlarmSound() {
   playAlarmChime();
-  // Request desktop notification permission if not yet granted
   if ('Notification' in window && Notification.permission !== 'granted') {
     Notification.requestPermission();
   }
@@ -910,13 +1118,11 @@ function requestNotificationPermission() {
   if ('Notification' in window) {
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
-        alert('✅ Desktop Notification enabled successfully! You will receive daily 11:00 AM alerts even if the browser tab is minimized.');
+        alert('✅ Desktop Notification enabled successfully!');
       } else {
-        alert('⚠️ Notification permission was not granted. Please allow notifications in your browser settings.');
+        alert('⚠️ Notification permission was not granted.');
       }
     });
-  } else {
-    alert('Your browser does not support desktop notifications.');
   }
 }
 
@@ -1136,7 +1342,6 @@ function restoreDataPrompt() {
 
 // Setup Event Listeners
 function setupEventListeners() {
-  // Task filter tabs
   document.querySelectorAll('[data-filter]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('[data-filter]').forEach(b => {
@@ -1150,7 +1355,6 @@ function setupEventListeners() {
     });
   });
 
-  // Task search input
   const searchInput = document.getElementById('search-tasks');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -1159,7 +1363,6 @@ function setupEventListeners() {
     });
   }
 
-  // Client search input
   if (clientSearchInputEl) {
     clientSearchInputEl.addEventListener('input', (e) => {
       clientSearchQuery = e.target.value;
