@@ -389,17 +389,19 @@
       </div>
 
       <!-- ============================================================== -->
-      <!-- TABLE FORMAT (100% Full Width): TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
+      <!-- TABLE FORMAT (100% Full Width & ↔️ Resizable Columns): TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
       <!-- ============================================================== -->
       <div class="overflow-x-auto w-full">
-        <table class="w-full text-left border-collapse audit-table text-sm">
+        <table class="w-full text-left border-collapse audit-table text-sm" id="main-audit-table">
           <thead>
             <tr>
-              <!-- SELECT ALL MASTER CHECKBOX COLUMN (Entire cell is clickable) -->
+              <!-- SELECT ALL MASTER CHECKBOX COLUMN -->
               <th 
+                data-col="select"
                 onclick="toggleSelectAllTasks()" 
                 title="Click to Select All / Deselect All Tasks"
-                class="py-2.5 px-3 text-center w-14 border-r border-slate-300 cursor-pointer select-none hover:bg-slate-200 transition">
+                style="width: 55px;"
+                class="py-2.5 px-3 text-center border-r border-slate-300 cursor-pointer select-none hover:bg-slate-200 transition relative">
                 <div class="flex flex-col items-center justify-center gap-0.5 pointer-events-none">
                   <input 
                     type="checkbox" 
@@ -408,21 +410,51 @@
                   />
                   <span class="text-[9px] font-black text-slate-600 uppercase tracking-tighter">ALL</span>
                 </div>
+                <div class="col-resizer" title="Drag to resize column width"></div>
               </th>
-              <th class="py-3 px-3 text-center w-16 border-r border-slate-300">
-                S. No.
+
+              <!-- S. NO. COLUMN -->
+              <th 
+                data-col="sno"
+                style="width: 65px;"
+                class="py-3 px-3 text-center border-r border-slate-300 relative">
+                <span>S. No.</span>
+                <div class="col-resizer" title="Drag to resize column width"></div>
               </th>
-              <th class="py-3 px-4 border-r border-slate-300 min-w-[320px]">
-                PARTICULARS
+
+              <!-- PARTICULARS COLUMN -->
+              <th 
+                data-col="particulars"
+                style="width: 440px;"
+                class="py-3 px-4 border-r border-slate-300 relative">
+                <span>PARTICULARS</span>
+                <div class="col-resizer" title="Drag to resize column width"></div>
               </th>
-              <th class="py-3 px-4 w-48 border-r border-slate-300">
-                PERIOD
+
+              <!-- PERIOD COLUMN -->
+              <th 
+                data-col="period"
+                style="width: 180px;"
+                class="py-3 px-4 border-r border-slate-300 relative">
+                <span>PERIOD</span>
+                <div class="col-resizer" title="Drag to resize column width"></div>
               </th>
-              <th class="py-3 px-4 border-r border-slate-300 min-w-[260px]">
-                REMARK
+
+              <!-- REMARK COLUMN -->
+              <th 
+                data-col="remark"
+                style="width: 320px;"
+                class="py-3 px-4 border-r border-slate-300 relative">
+                <span>REMARK</span>
+                <div class="col-resizer" title="Drag to resize column width"></div>
               </th>
-              <th class="py-3 px-3 text-center w-28 no-print">
-                ACTIONS
+
+              <!-- ACTIONS COLUMN -->
+              <th 
+                data-col="actions"
+                style="width: 120px;"
+                class="py-3 px-3 text-center no-print relative">
+                <span>ACTIONS</span>
               </th>
             </tr>
           </thead>

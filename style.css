@@ -72,10 +72,14 @@ html, body {
   background: #94a3b8;
 }
 
-/* Table Specific Styling (100% Full Width) */
+/* ========================================================= */
+/* ↔️ EXCEL-STYLE RESIZABLE TABLE COLUMNS                    */
+/* ========================================================= */
+
 .audit-table {
   width: 100% !important;
   border-collapse: collapse !important;
+  table-layout: fixed !important; /* Enables smooth manual column resizing */
 }
 
 .audit-table th {
@@ -86,11 +90,17 @@ html, body {
   font-size: 0.78rem;
   letter-spacing: 0.05em;
   border: 1px solid #cbd5e1;
+  position: relative;
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .audit-table td {
   border: 1px solid #e2e8f0;
   vertical-align: middle;
+  overflow: hidden;
 }
 
 .audit-table tr:hover td {
@@ -106,6 +116,26 @@ html, body {
   color: #64748b;
 }
 
+/* Draggable Column Resizer Divider Line */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 20;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.col-resizer:hover,
+.col-resizer.is-resizing {
+  background-color: #2563eb !important;
+  width: 4px !important;
+}
+
 /* Custom Checkbox */
 .custom-checkbox {
   width: 1.25rem;
@@ -119,7 +149,7 @@ html, body {
   width: 100%;
   border: 1px solid transparent;
   background: transparent;
-  padding: 7px 12px;
+  padding: 6px 10px;
   border-radius: 4px;
   transition: all 0.15s ease;
   color: inherit;
@@ -200,6 +230,7 @@ html, body {
   .top-navbar,
   .btn-action,
   .modal-overlay,
+  .col-resizer,
   #whatsapp-modal,
   #alarm-modal,
   #cloud-modal,
@@ -260,6 +291,7 @@ html, body {
     width: 100% !important;
     border-collapse: collapse !important;
     font-size: 10pt !important;
+    table-layout: auto !important;
   }
 
   .audit-table th,

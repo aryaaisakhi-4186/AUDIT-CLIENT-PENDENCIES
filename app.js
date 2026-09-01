@@ -88,6 +88,8 @@ let firebaseDataRef = null;
 let isCloudConnected = false;
 let isSyncingFromCloud = false;
 
+const COLUMN_WIDTHS_KEY = 'audit_2026_column_widths';
+
 // DOM Elements
 const clientTabsContainer = document.getElementById('client-tabs');
 const clientNameInput = document.getElementById('client-name-input');
@@ -113,6 +115,103 @@ function initApp() {
   renderAll();
   setupEventListeners();
   initAlarmMonitor();
+  initColumnResizers();
+}
+
+// ↔️ Excel-Style Column Resizer Engine
+function initColumnResizers() {
+  const table = document.getElementById('main-audit-table');
+  if (!table) return;
+
+  // Restore previously saved column widths
+  try {
+    const savedWidths = localStorage.getItem(COLUMN_WIDTHS_KEY);
+    if (savedWidths) {
+      const parsed = JSON.parse(savedWidths);
+      Object.keys(parsed).forEach(colName => {
+        const th = table.querySelector(`th[data-col="${colName}"]`);
+        if (th && parsed[colName]) {
+          th.style.width = parsed[colName];
+        }
+      });
+    }
+  } catch (e) {}
+
+  const resizers = table.querySelectorAll('.col-resizer');
+  resizers.forEach(resizer => {
+    const th = resizer.parentElement;
+    let startX, startWidth;
+
+    const onMouseDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startX = e.pageX;
+      startWidth = th.offsetWidth;
+      resizer.classList.add('is-resizing');
+
+      const onMouseMove = (moveEvent) => {
+        const delta = moveEvent.pageX - startX;
+        const newWidth = Math.max(40, startWidth + delta);
+        th.style.width = `${newWidth}px`;
+      };
+
+      const onMouseUp = () => {
+        resizer.classList.remove('is-resizing');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        saveColumnWidths();
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const onTouchStart = (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      e.stopPropagation();
+      startX = e.touches[0].pageX;
+      startWidth = th.offsetWidth;
+      resizer.classList.add('is-resizing');
+
+      const onTouchMove = (moveEvent) => {
+        if (!moveEvent.touches || moveEvent.touches.length === 0) return;
+        const delta = moveEvent.touches[0].pageX - startX;
+        const newWidth = Math.max(40, startWidth + delta);
+        th.style.width = `${newWidth}px`;
+      };
+
+      const onTouchEnd = () => {
+        resizer.classList.remove('is-resizing');
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        saveColumnWidths();
+      };
+
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    };
+
+    resizer.addEventListener('mousedown', onMouseDown);
+    resizer.addEventListener('touchstart', onTouchStart, { passive: false });
+  });
+}
+
+// Save adjusted column widths
+function saveColumnWidths() {
+  const table = document.getElementById('main-audit-table');
+  if (!table) return;
+
+  const widths = {};
+  table.querySelectorAll('th[data-col]').forEach(th => {
+    const colName = th.getAttribute('data-col');
+    if (colName) {
+      widths[colName] = `${th.offsetWidth}px`;
+    }
+  });
+
+  try {
+    localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+  } catch (e) {}
 }
 
 // Load data from LocalStorage (Fast initial render while Cloud connects)
