@@ -1692,10 +1692,11 @@ function deleteCurrentClient() {
   }
 
   // Admin Rights Verification
-  if (currentAuthUser.role !== 'admin') {
-    const adminPin = prompt(`🔒 ADMIN RIGHTS REQUIRED:\n\nDeleting client "${client.name}" requires Master Admin rights.\nPlease enter Admin Password / PIN:`);
-    if (!adminPin || (adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
-      alert("❌ Access Denied: Incorrect Admin Password. Only Admin can delete clients.");
+  if (!currentAuthUser || currentAuthUser.role !== 'admin') {
+    const currentAdminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin.trim() : '7860';
+    const adminPin = prompt(`🔒 ADMIN RIGHTS REQUIRED:\n\nDeleting client "${client.name}" requires Master Admin rights.\nPlease enter Master Admin PIN:`);
+    if (!adminPin || adminPin.trim() !== currentAdminPin) {
+      alert("❌ Access Denied: Incorrect Admin PIN. Only Admin can delete clients.");
       return;
     }
   }
@@ -2102,9 +2103,9 @@ function performMemberLogin() {
 function performAdminLogin() {
   const pinInput = document.getElementById('login-admin-pin');
   const pin = pinInput ? pinInput.value.trim() : '';
-  const adminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
+  const currentAdminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin.trim() : '7860';
 
-  if (pin === adminPin || pin === MASTER_ADMIN_PIN || pin === '9999' || pin === '1234' || pin.toLowerCase() === 'admin2026') {
+  if (pin && pin === currentAdminPin) {
     currentAuthUser = {
       role: 'admin',
       name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
@@ -2116,7 +2117,7 @@ function performAdminLogin() {
     applyAuthState();
     renderAll();
   } else {
-    alert("❌ Incorrect Admin PIN / Password. Please try again.");
+    alert("❌ Incorrect Master Admin PIN. Please enter the PIN configured in User Master.");
     if (pinInput) pinInput.focus();
   }
 }
@@ -2136,13 +2137,13 @@ function logoutUser() {
 // =========================================================================
 
 function openUserMasterModal() {
-  const masterPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
+  const currentAdminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin.trim() : '7860';
 
   // If not logged in as Admin, require Admin PIN
   if (!currentAuthUser || currentAuthUser.role !== 'admin') {
-    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nManaging User Master requires Master Admin rights. Enter Admin PIN:");
-    if (!adminPin || (adminPin.trim() !== masterPin && adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
-      alert("❌ Access Denied: Incorrect Admin Password.");
+    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nManaging User Master requires Master Admin rights.\nEnter Master Admin PIN:");
+    if (!adminPin || adminPin.trim() !== currentAdminPin) {
+      alert("❌ Access Denied: Incorrect Admin PIN.");
       return;
     }
   }
@@ -2484,11 +2485,11 @@ function loginAsMember() {
 }
 
 function loginAsAdminPrompt() {
-  const masterPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
-  const pin = prompt(`🔐 Enter Master Admin Password / PIN (Default: ${masterPin}):`);
+  const currentAdminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin.trim() : '7860';
+  const pin = prompt("🔐 Enter Master Admin PIN / Password:");
   if (!pin) return;
 
-  if (pin.trim() === masterPin || pin.trim() === MASTER_ADMIN_PIN || pin.trim() === '9999' || pin.trim() === '1234' || pin.trim().toLowerCase() === 'admin2026') {
+  if (pin.trim() === currentAdminPin) {
     currentAuthUser = {
       role: 'admin',
       name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
@@ -2502,16 +2503,17 @@ function loginAsAdminPrompt() {
     closeAuthModal();
     alert("✅ Successfully authenticated as MASTER ADMIN with full rights!");
   } else {
-    alert("❌ Incorrect Admin Password! Access denied.");
+    alert("❌ Incorrect Admin PIN! Access denied.");
   }
 }
 
 // Full App Reset (Strictly Protected by Admin Rights)
 function fullAppResetPrompt() {
+  const currentAdminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin.trim() : '7860';
   if (!currentAuthUser || currentAuthUser.role !== 'admin') {
-    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nResetting the app requires Master Admin permissions.\nPlease enter Admin Password / PIN:");
-    if (!adminPin || (adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
-      alert("❌ Access Denied: Incorrect Admin Password. Only Admin can reset the app.");
+    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nResetting the app requires Master Admin permissions.\nPlease enter Master Admin PIN:");
+    if (!adminPin || adminPin.trim() !== currentAdminPin) {
+      alert("❌ Access Denied: Incorrect Admin PIN. Only Admin can reset the app.");
       return;
     }
   }
