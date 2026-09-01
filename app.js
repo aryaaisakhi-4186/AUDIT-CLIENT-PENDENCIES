@@ -1943,8 +1943,25 @@ function dismissInstallBanner() {
   if (banner) banner.classList.add('hidden');
 }
 
+// Prevent double-tap zoom & pinch-to-zoom gestures on mobile
+function initMobileZoomPrevention() {
+  document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300 && event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
+      event.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+}
+
 // Start app on DOMContentLoaded
 window.addEventListener('DOMContentLoaded', () => {
   initApp();
   initPWAInstallation();
+  initMobileZoomPrevention();
 });

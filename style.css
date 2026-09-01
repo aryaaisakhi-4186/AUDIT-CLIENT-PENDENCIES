@@ -21,6 +21,8 @@ html, body {
   background-color: var(--bg-page);
   font-family: 'Inter', sans-serif;
   color: #1e293b;
+  touch-action: pan-y !important; /* Disables double-tap and pinch-to-zoom gestures */
+  -webkit-text-size-adjust: 100% !important;
 }
 
 /* 100% True Full-Screen Edge-to-Edge Fluid Layout */
@@ -306,7 +308,8 @@ html, body {
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
     padding: 8px 10px !important;
-    font-size: 0.95rem !important;
+    font-size: 16px !important; /* 16px prevents mobile auto-focus zoom */
+    line-height: 1.4 !important;
   }
 
   .table-input {
@@ -314,7 +317,7 @@ html, body {
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
     padding: 8px 10px !important;
-    font-size: 0.9rem !important;
+    font-size: 16px !important; /* 16px prevents mobile auto-focus zoom */
   }
 
   .row-completed .table-textarea,
