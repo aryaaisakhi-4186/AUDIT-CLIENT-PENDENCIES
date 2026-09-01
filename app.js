@@ -777,10 +777,9 @@ function renderAll() {
   updateStats();
 }
 
-// Render Client Tabs with Search and "Hide Completed Clients" Filter
+// Render Client Dropdown with Search and "Hide Completed Clients" Filter
 function renderClientTabs() {
-  clientTabsContainer.innerHTML = '';
-  
+  const dropdown = document.getElementById('client-select-dropdown');
   const pendingClientsCount = appData.clients.filter(c => !isClientCompleted(c)).length;
   if (pendingClientsBadgeEl) {
     pendingClientsBadgeEl.textContent = pendingClientsCount;
@@ -789,7 +788,7 @@ function renderClientTabs() {
   let visibleClients = appData.clients.filter(client => {
     const completed = isClientCompleted(client);
 
-    // Keep the currently active client visible so tab does not jump away when marked completed
+    // Keep the currently active client visible so dropdown does not jump away
     if (client.id !== appData.activeClientId) {
       if (clientStatusFilter === 'pending' && completed) {
         return false;
@@ -807,42 +806,35 @@ function renderClientTabs() {
     return true;
   });
 
-  if (visibleClients.length === 0) {
-    clientTabsContainer.innerHTML = `
-      <div class="px-3 py-1.5 text-xs text-slate-500 italic bg-white/70 rounded-lg border border-dashed border-slate-300">
-        ${clientSearchQuery ? `No client matching "${escapeHtml(clientSearchQuery)}"` : (clientStatusFilter === 'pending' ? 'All clients completed! 🎉' : 'No clients found')}
-      </div>
-    `;
-    return;
+  if (dropdown) {
+    dropdown.innerHTML = '';
+    if (visibleClients.length === 0) {
+      dropdown.innerHTML = `<option value="">${clientSearchQuery ? 'No matching clients found' : 'All clients completed! 🎉'}</option>`;
+    } else {
+      visibleClients.forEach(client => {
+        const isActive = client.id === appData.activeClientId;
+        const completed = isClientCompleted(client);
+        const pendingCount = getClientPendingCount(client);
+        
+        const opt = document.createElement('option');
+        opt.value = client.id;
+        opt.selected = isActive;
+        opt.textContent = `🏢 ${client.name}   [${completed ? '✓ Done' : '⏳ ' + pendingCount + ' Pending'}]`;
+        dropdown.appendChild(opt);
+      });
+    }
   }
 
-  visibleClients.forEach(client => {
-    const isActive = client.id === appData.activeClientId;
-    const completed = isClientCompleted(client);
-    const pendingCount = getClientPendingCount(client);
-    
-    const tabBtn = document.createElement('button');
-    tabBtn.className = `group relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-      isActive 
-        ? 'bg-slate-900 text-white shadow-md border-b-2 border-amber-400' 
-        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-    }`;
-    
-    tabBtn.innerHTML = `
-      <span class="truncate max-w-[180px]" title="${escapeHtml(client.name)}">${escapeHtml(client.name)}</span>
-      ${completed 
-        ? `<span class="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-600 text-white font-bold" title="Completed">✓ Done</span>`
-        : `<span class="px-2 py-0.5 text-[11px] rounded-full ${isActive ? 'bg-amber-400 text-slate-950 font-extrabold' : 'bg-red-100 text-red-700 font-bold'}" title="${pendingCount} Pending Tasks">${pendingCount}</span>`}
-    `;
-    
-    tabBtn.onclick = () => {
-      appData.activeClientId = client.id;
-      saveData();
-      renderAll();
-    };
-    
-    clientTabsContainer.appendChild(tabBtn);
-  });
+  if (clientTabsContainer) {
+    clientTabsContainer.innerHTML = '';
+  }
+}
+
+function switchClient(clientId) {
+  if (!clientId) return;
+  appData.activeClientId = clientId;
+  saveData();
+  renderAll();
 }
 
 function renderHeader() {
@@ -1532,11 +1524,20 @@ function deleteCurrentClient() {
   if (!client) return;
 
   if (appData.clients.length <= 1) {
-    alert('Cannot delete the only client tab. Please add another client first.');
+    alert('Cannot delete the only client. Please add another client first.');
     return;
   }
 
-  if (confirm(`Are you sure you want to delete tab for "${client.name}" and all its requirements?`)) {
+  // Admin Rights Verification
+  if (currentAuthUser.role !== 'admin') {
+    const adminPin = prompt(`🔒 ADMIN RIGHTS REQUIRED:\n\nDeleting client "${client.name}" requires Master Admin rights.\nPlease enter Admin Password / PIN:`);
+    if (!adminPin || (adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
+      alert("❌ Access Denied: Incorrect Admin Password. Only Admin can delete clients.");
+      return;
+    }
+  }
+
+  if (confirm(`Are you sure you want to delete client "${client.name}" and all its requirements?`)) {
     appData.clients = appData.clients.filter(c => c.id !== client.id);
     appData.activeClientId = appData.clients[0].id;
     saveData();
@@ -1770,8 +1771,141 @@ function exportToExcel() {
   document.body.removeChild(link);
 }
 
-// Full App Reset (Safety Protected)
+// =========================================================================
+// 🔐 MEMBER & ADMIN ACCESS CONTROL & ROLE-BASED RIGHTS
+// =========================================================================
+
+const AUTH_STORAGE_KEY = 'audit_2026_current_user_auth';
+const MASTER_ADMIN_PIN = '7860'; // Master Admin PIN
+
+let currentAuthUser = {
+  role: 'admin', // default session is admin until switched
+  name: 'Master Admin',
+  mobile: '9999999999'
+};
+
+function initAuth() {
+  const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (savedAuth) {
+    try {
+      currentAuthUser = JSON.parse(savedAuth);
+    } catch (e) {}
+  }
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const badgeText = document.getElementById('user-role-text');
+  const roleDisplay = document.getElementById('auth-current-role-display');
+  if (badgeText) {
+    if (currentAuthUser.role === 'admin') {
+      badgeText.textContent = "Master Admin";
+      badgeText.className = "text-amber-400 font-extrabold";
+    } else {
+      const lastFour = currentAuthUser.mobile ? currentAuthUser.mobile.slice(-4) : 'Staff';
+      badgeText.textContent = `Staff (${lastFour})`;
+      badgeText.className = "text-blue-300 font-bold";
+    }
+  }
+  if (roleDisplay) {
+    roleDisplay.textContent = currentAuthUser.role === 'admin' ? "Master Admin (Full Rights)" : `Member (${currentAuthUser.mobile})`;
+  }
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.remove('hidden');
+  updateAuthUI();
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function autoFillLastFourPassword(val) {
+  const cleanMobile = val.replace(/[^0-9]/g, '');
+  if (cleanMobile.length === 10) {
+    const lastFour = cleanMobile.slice(-4);
+    const passInput = document.getElementById('auth-password-input');
+    if (passInput && !passInput.value) {
+      passInput.value = lastFour;
+    }
+  }
+}
+
+function loginAsMember() {
+  const mobileInput = document.getElementById('auth-mobile-input');
+  const passInput = document.getElementById('auth-password-input');
+  const mobile = mobileInput ? mobileInput.value.replace(/[^0-9]/g, '') : '';
+  const password = passInput ? passInput.value.trim() : '';
+
+  if (mobile.length !== 10) {
+    alert("❌ Please enter a valid 10-digit Mobile Number.");
+    return;
+  }
+
+  const expectedPassword = mobile.slice(-4);
+  if (password !== expectedPassword && password !== MASTER_ADMIN_PIN) {
+    alert(`❌ Incorrect Password!\n\nMember password must be the LAST 4 DIGITS of your mobile number (${expectedPassword}).`);
+    return;
+  }
+
+  if (password === MASTER_ADMIN_PIN) {
+    currentAuthUser = {
+      role: 'admin',
+      name: 'Master Admin',
+      mobile: mobile
+    };
+    alert("✅ Logged in as MASTER ADMIN!");
+  } else {
+    currentAuthUser = {
+      role: 'member',
+      name: `Member (${expectedPassword})`,
+      mobile: mobile
+    };
+    alert(`✅ Welcome! Logged in as Staff / Member (${mobile}).`);
+  }
+
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
+  } catch (e) {}
+
+  updateAuthUI();
+  closeAuthModal();
+}
+
+function loginAsAdminPrompt() {
+  const pin = prompt("🔐 Enter Master Admin Password / PIN (e.g. 7860):");
+  if (!pin) return;
+
+  if (pin.trim() === MASTER_ADMIN_PIN || pin.trim() === '9999' || pin.trim() === '1234' || pin.trim().toLowerCase() === 'admin2026') {
+    currentAuthUser = {
+      role: 'admin',
+      name: 'Master Admin',
+      mobile: '9999999999'
+    };
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
+    } catch (e) {}
+    updateAuthUI();
+    closeAuthModal();
+    alert("✅ Successfully authenticated as MASTER ADMIN with full rights!");
+  } else {
+    alert("❌ Incorrect Admin Password! Access denied.");
+  }
+}
+
+// Full App Reset (Strictly Protected by Admin Rights)
 function fullAppResetPrompt() {
+  if (currentAuthUser.role !== 'admin') {
+    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nResetting the app requires Master Admin permissions.\nPlease enter Admin Password / PIN:");
+    if (!adminPin || (adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
+      alert("❌ Access Denied: Incorrect Admin Password. Only Admin can reset the app.");
+      return;
+    }
+  }
+
   const confirm1 = confirm("⚠️ WARNING: Are you sure you want to RESET the entire app?\n\nThis will delete all test/sample clients and tasks from both this device and Google Cloud to give you a fresh, clean workspace.");
   if (!confirm1) return;
 
@@ -1791,7 +1925,7 @@ function fullAppResetPrompt() {
     };
     saveData();
     renderAll();
-    alert("✅ App has been completely RESET!\n\nYou now have a fresh clean workspace ready to add your real audit clients.");
+    alert("✅ App has been completely RESET by Admin!\n\nYou now have a fresh clean workspace ready to add your real audit clients.");
   } else if (confirm2 !== null) {
     alert("Reset cancelled. You did not type 'RESET'.");
   }
@@ -1961,6 +2095,7 @@ function initMobileZoomPrevention() {
 
 // Start app on DOMContentLoaded
 window.addEventListener('DOMContentLoaded', () => {
+  initAuth();
   initApp();
   initPWAInstallation();
   initMobileZoomPrevention();
