@@ -118,24 +118,42 @@ function initApp() {
   initColumnResizers();
 }
 
-// ↔️ Excel-Style Column Resizer Engine
+// ↔️ Excel-Style Column Resizer & Width Lock Engine
+function applySavedColumnWidths() {
+  const table = document.getElementById('main-audit-table');
+  if (!table) return;
+
+  const defaultWidths = {
+    select: '55px',
+    sno: '65px',
+    particulars: '440px',
+    period: '180px',
+    remark: '320px',
+    actions: '120px'
+  };
+
+  try {
+    const savedWidths = localStorage.getItem(COLUMN_WIDTHS_KEY);
+    const widths = savedWidths ? { ...defaultWidths, ...JSON.parse(savedWidths) } : defaultWidths;
+    Object.keys(widths).forEach(colName => {
+      const th = table.querySelector(`th[data-col="${colName}"]`);
+      if (th && widths[colName]) {
+        th.style.width = widths[colName];
+      }
+    });
+  } catch (e) {
+    Object.keys(defaultWidths).forEach(colName => {
+      const th = table.querySelector(`th[data-col="${colName}"]`);
+      if (th) th.style.width = defaultWidths[colName];
+    });
+  }
+}
+
 function initColumnResizers() {
   const table = document.getElementById('main-audit-table');
   if (!table) return;
 
-  // Restore previously saved column widths
-  try {
-    const savedWidths = localStorage.getItem(COLUMN_WIDTHS_KEY);
-    if (savedWidths) {
-      const parsed = JSON.parse(savedWidths);
-      Object.keys(parsed).forEach(colName => {
-        const th = table.querySelector(`th[data-col="${colName}"]`);
-        if (th && parsed[colName]) {
-          th.style.width = parsed[colName];
-        }
-      });
-    }
-  } catch (e) {}
+  applySavedColumnWidths();
 
   const resizers = table.querySelectorAll('.col-resizer');
   resizers.forEach(resizer => {
@@ -148,15 +166,19 @@ function initColumnResizers() {
       startX = e.pageX;
       startWidth = th.offsetWidth;
       resizer.classList.add('is-resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
 
       const onMouseMove = (moveEvent) => {
         const delta = moveEvent.pageX - startX;
-        const newWidth = Math.max(40, startWidth + delta);
+        const newWidth = Math.max(45, startWidth + delta);
         th.style.width = `${newWidth}px`;
       };
 
       const onMouseUp = () => {
         resizer.classList.remove('is-resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
         saveColumnWidths();
@@ -176,7 +198,7 @@ function initColumnResizers() {
       const onTouchMove = (moveEvent) => {
         if (!moveEvent.touches || moveEvent.touches.length === 0) return;
         const delta = moveEvent.touches[0].pageX - startX;
-        const newWidth = Math.max(40, startWidth + delta);
+        const newWidth = Math.max(45, startWidth + delta);
         th.style.width = `${newWidth}px`;
       };
 
@@ -196,7 +218,7 @@ function initColumnResizers() {
   });
 }
 
-// Save adjusted column widths
+// Save adjusted column widths to localStorage so they stay permanently locked
 function saveColumnWidths() {
   const table = document.getElementById('main-audit-table');
   if (!table) return;
@@ -369,35 +391,36 @@ function generateLetterheadHTML() {
   const rawFY = client.fy || 'FINANCIAL YEAR 2025-26';
   const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
 
-  let tasksToInclude = client.tasks || [];
-  if (whatsappFilterMode === 'pending') {
-    tasksToInclude = tasksToInclude.filter(t => !t.checked);
-  }
+  // Strictly Pending Tasks ONLY in PDF (Completed tasks are excluded)
+  let tasksToInclude = (client.tasks || []).filter(t => !t.checked);
 
   let tableRowsHTML = '';
   if (tasksToInclude.length === 0) {
     tableRowsHTML = `
       <tr>
         <td colspan="4" style="padding: 24px; text-align: center; color: #16a34a; font-weight: bold; font-size: 14px;">
-          ✓ All audit requirements & documents have been completely received for this period!
+          ✓ All audit requirements & documents have been completely received! No pending requirements.
         </td>
       </tr>
     `;
   } else {
     tasksToInclude.forEach((task, index) => {
+      // If user wrote something in remark, show exact text; otherwise leave completely blank
+      const userRemark = (task.remark && task.remark.trim()) ? escapeHtml(task.remark.trim()) : '';
+
       tableRowsHTML += `
         <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 9px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 42px;">
+          <td style="padding: 9px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 45px; vertical-align: top;">
             ${index + 1}
           </td>
-          <td style="padding: 9px 12px; font-weight: 700; color: #0f172a; font-size: 12px; border-right: 1px solid #cbd5e1; line-height: 1.4;">
-            ${escapeHtml(task.particulars || 'Audit Requirement')}
+          <td style="padding: 9px 12px; font-weight: 700; color: #0f172a; font-size: 12px; border-right: 1px solid #cbd5e1; line-height: 1.45; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
+            ${escapeHtml(task.particulars || '')}
           </td>
-          <td style="padding: 9px 10px; font-weight: 600; color: #475569; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 130px;">
+          <td style="padding: 9px 10px; font-weight: 600; color: #475569; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 130px; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
             ${escapeHtml(task.period || cleanYear)}
           </td>
-          <td style="padding: 9px 10px; font-size: 11px; color: ${task.checked ? '#16a34a' : '#b45309'}; font-weight: 600;">
-            ${task.remark && task.remark.trim() ? escapeHtml(task.remark.trim()) : (task.checked ? '✓ Received' : '⏳ Pending from Client')}
+          <td style="padding: 9px 10px; font-size: 11.5px; color: #334155; font-weight: 600; line-height: 1.45; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
+            ${userRemark}
           </td>
         </tr>
       `;
@@ -405,49 +428,49 @@ function generateLetterheadHTML() {
   }
 
   return `
-    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 28px 32px; width: 100%; box-sizing: border-box; position: relative;">
+    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 24px 28px; width: 100%; box-sizing: border-box; position: relative;">
       
       <!-- LETTERHEAD TOP BRANDING -->
-      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 16px;">
-        <h1 style="font-family: 'Cinzel', serif; font-size: 23px; font-weight: 900; letter-spacing: 2px; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase;">
+      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px;">
+        <h1 style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 900; letter-spacing: 2px; color: #0f172a; margin: 0 0 3px 0; text-transform: uppercase;">
           M/S. ARYA ASSOCIATES
         </h1>
-        <div style="width: 80px; height: 2px; background-color: #b45309; margin: 0 auto 6px auto;"></div>
-        <p style="font-size: 11px; font-weight: 800; color: #475569; letter-spacing: 1px; margin: 0; text-transform: uppercase;">
+        <div style="width: 80px; height: 2px; background-color: #b45309; margin: 0 auto 5px auto;"></div>
+        <p style="font-size: 10.5px; font-weight: 800; color: #475569; letter-spacing: 1px; margin: 0; text-transform: uppercase;">
           AUDIT REQUIREMENTS & CLIENT PENDENCY REQUISITION
         </p>
       </div>
 
       <!-- CLIENT & DATE METADATA BOX -->
-      <div style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
         <div style="flex: 1;">
-          <p style="margin: 0 0 3px 0; font-size: 10.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
-          <h2 style="margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
+          <p style="margin: 0 0 2px 0; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
+          <h2 style="margin: 0; font-size: 17px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
             ${escapeHtml(client.name)}
           </h2>
         </div>
-        <div style="text-align: right; min-width: 170px;">
-          <div style="display: inline-block; background-color: #0f172a; color: #fbbf24; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 900; margin-bottom: 4px;">
+        <div style="text-align: right; min-width: 160px;">
+          <div style="display: inline-block; background-color: #0f172a; color: #fbbf24; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 900; margin-bottom: 3px;">
             📅 FY ${escapeHtml(cleanYear)}
           </div>
-          <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: 700; color: #475569;">
+          <p style="margin: 2px 0 0 0; font-size: 10.5px; font-weight: 700; color: #475569;">
             <strong>Date:</strong> ${todayStr}
           </p>
         </div>
       </div>
 
       <!-- SUBJECT TITLE -->
-      <div style="margin-bottom: 14px;">
-        <p style="margin: 0; font-size: 12px; font-weight: 800; color: #0f172a;">
-          <span style="text-decoration: underline;">SUB:</span> Requisition for Pending Statutory Audit Documents & Records (${whatsappFilterMode === 'pending' ? 'Pending Items Only' : 'Complete Audit Checklist'})
+      <div style="margin-bottom: 12px;">
+        <p style="margin: 0; font-size: 11.5px; font-weight: 800; color: #0f172a;">
+          <span style="text-decoration: underline;">SUB:</span> Requisition for Pending Statutory Audit Documents & Records
         </p>
       </div>
 
       <!-- AUDIT CHECKLIST TABLE -->
-      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #0f172a; margin-bottom: 20px; font-size: 11.5px;">
+      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #0f172a; margin-bottom: 0; font-size: 11.5px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #0f172a; color: #ffffff;">
-            <th style="padding: 8px 6px; text-align: center; width: 42px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 8px 6px; text-align: center; width: 45px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               S. No.
             </th>
             <th style="padding: 8px 12px; text-align: left; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
@@ -466,33 +489,13 @@ function generateLetterheadHTML() {
         </tbody>
       </table>
 
-      <!-- AUDITOR FOOTER NOTE -->
-      <div style="background-color: #fffbeb; border-left: 3.5px solid #b45309; padding: 10px 14px; margin-bottom: 30px; border-radius: 4px;">
-        <p style="margin: 0; font-size: 11px; color: #78350f; font-weight: 600; line-height: 1.45;">
-          <strong>Important Note:</strong> Kindly arrange to provide the above pending records/clarifications at the earliest to facilitate smooth audit verification and statutory finalization.
-        </p>
-      </div>
-
-      <!-- SIGNATURE BLOCKS -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 35px; padding-top: 10px;">
-        <div style="text-align: center; width: 220px;">
-          <div style="border-bottom: 1.5px solid #0f172a; height: 35px; margin-bottom: 6px;"></div>
-          <p style="margin: 0; font-size: 11px; font-weight: 800; color: #0f172a;">Authorized SPOC / Signature</p>
-          <p style="margin: 2px 0 0 0; font-size: 9.5px; color: #64748b;">(For ${escapeHtml(client.name)})</p>
-        </div>
-
-        <div style="text-align: center; width: 220px;">
-          <div style="border-bottom: 1.5px solid #0f172a; height: 35px; margin-bottom: 6px;"></div>
-          <p style="margin: 0; font-size: 11px; font-weight: 900; color: #0f172a;">For M/S. ARYA ASSOCIATES</p>
-          <p style="margin: 2px 0 0 0; font-size: 9.5px; color: #64748b;">Authorized Signatory / Audit Team</p>
-        </div>
-      </div>
+      <!-- Bottom is kept completely clean without unwanted notes or clutter -->
 
     </div>
   `;
 }
 
-// Download Letterhead PDF File directly to Computer / Mobile
+// Download Letterhead PDF File directly to Computer / Mobile (0.75" Bottom Margin)
 async function downloadLetterheadPDF() {
   const client = getActiveClient();
   if (!client) return;
@@ -508,7 +511,7 @@ async function downloadLetterheadPDF() {
   const fileName = `Audit_Pendency_Letterhead_${safeClientName}.pdf`;
 
   const opt = {
-    margin: [8, 8, 8, 8],
+    margin: [10, 10, 19.05, 10], // 19.05mm = exactly 0.75 inch bottom margin!
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2.5, useCORS: true, logging: false },
@@ -526,7 +529,7 @@ async function downloadLetterheadPDF() {
   }
 }
 
-// Share Official Letterhead PDF on WhatsApp
+// Share Official Letterhead PDF on WhatsApp (0.75" Bottom Margin)
 async function shareLetterheadPDFOnWhatsApp() {
   const client = getActiveClient();
   if (!client) return;
@@ -546,7 +549,7 @@ async function shareLetterheadPDFOnWhatsApp() {
   const fileName = `Audit_Pendency_Letterhead_${safeClientName}.pdf`;
 
   const opt = {
-    margin: [8, 8, 8, 8],
+    margin: [10, 10, 19.05, 10], // 19.05mm = exactly 0.75 inch bottom margin!
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2.5, useCORS: true, logging: false },
@@ -889,13 +892,13 @@ function renderTasksTable() {
   taskTableBody.innerHTML = '';
   filteredTasks.forEach((task, index) => {
     const tr = document.createElement('tr');
-    tr.className = `transition-colors border-b ${task.checked ? 'row-completed bg-emerald-50/40' : 'hover:bg-slate-50'}`;
+    tr.className = `transition-colors border-b ${task.checked ? 'row-completed' : 'hover:bg-slate-50'}`;
     
     const actualIndex = client.tasks.findIndex(t => t.id === task.id) + 1;
 
     tr.innerHTML = `
       <!-- TICK BOX -->
-      <td class="px-3 py-3 text-center w-14">
+      <td class="px-2 py-2 text-center w-14">
         <input 
           type="checkbox" 
           class="custom-checkbox" 
@@ -906,51 +909,51 @@ function renderTasksTable() {
       </td>
 
       <!-- S. NO. -->
-      <td class="px-3 py-3 text-center font-semibold text-slate-600 w-16">
+      <td class="px-2 py-2 text-center font-bold text-slate-700 w-16" style="vertical-align: top; padding-top: 10px;">
         ${actualIndex}
       </td>
 
-      <!-- PARTICULARS -->
-      <td class="px-3 py-2 min-w-[320px]">
-        <input 
-          type="text" 
+      <!-- PARTICULARS (Auto-expanding multi-line textarea) -->
+      <td class="px-2 py-1.5" style="vertical-align: top;">
+        <textarea 
+          rows="1"
           data-col="particulars"
-          value="${escapeHtml(task.particulars)}" 
           placeholder="Enter audit requirement or pending document..."
-          class="table-input font-medium text-slate-800 text-sm ${task.checked ? 'line-through text-slate-400' : ''}"
+          class="table-textarea font-medium text-slate-900 text-sm ${task.checked ? 'line-through text-slate-600 font-bold' : ''}"
           onchange="updateTaskProperty('${task.id}', 'particulars', this.value)"
+          oninput="autoResizeTextarea(this)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'particulars')"
-        />
+        >${escapeHtml(task.particulars)}</textarea>
       </td>
 
       <!-- PERIOD -->
-      <td class="px-3 py-2 w-48">
+      <td class="px-2 py-1.5" style="vertical-align: top;">
         <input 
           type="text" 
           data-col="period"
           value="${escapeHtml(task.period)}" 
-          placeholder="e.g. FY 2025-26, Q3, Monthly"
-          class="table-input text-slate-700 text-sm"
+          placeholder="e.g. FY 2025-26, Q3"
+          class="table-input text-slate-700 text-sm font-semibold"
           onchange="updateTaskProperty('${task.id}', 'period', this.value)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'period')"
         />
       </td>
 
-      <!-- REMARK -->
-      <td class="px-3 py-2 min-w-[260px]">
-        <input 
-          type="text" 
+      <!-- REMARK (Auto-expanding multi-line textarea) -->
+      <td class="px-2 py-1.5" style="vertical-align: top;">
+        <textarea 
+          rows="1"
           data-col="remark"
-          value="${escapeHtml(task.remark)}" 
-          placeholder="Add auditor remarks, client responses, or follow-up status..."
-          class="table-input text-slate-600 text-sm"
+          placeholder="Add remarks / follow-up status..."
+          class="table-textarea text-slate-700 text-sm font-medium"
           onchange="updateTaskProperty('${task.id}', 'remark', this.value)"
+          oninput="autoResizeTextarea(this)"
           onkeydown="handleTableInputKey(event, '${task.id}', 'remark')"
-        />
+        >${escapeHtml(task.remark)}</textarea>
       </td>
 
       <!-- ACTIONS: [+] | [▲] | [▼] | [🗑️] (tabindex -1 so Tab key stays in table columns) -->
-      <td class="px-2 py-2 text-center w-28 no-print action-cell">
+      <td class="px-2 py-2 text-center w-28 no-print action-cell" style="vertical-align: top; padding-top: 8px;">
         <div class="flex items-center justify-center gap-1">
           <button 
             tabindex="-1"
@@ -988,6 +991,25 @@ function renderTasksTable() {
 
     taskTableBody.appendChild(tr);
   });
+
+  // Auto-resize all textareas to fit content without cutting or overlapping
+  autoResizeAllTextareas();
+
+  // Apply saved column width locks
+  applySavedColumnWidths();
+}
+
+// Auto resize textarea helper
+function autoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.max(32, el.scrollHeight) + 'px';
+}
+
+function autoResizeAllTextareas() {
+  document.querySelectorAll('.table-textarea').forEach(ta => {
+    autoResizeTextarea(ta);
+  });
 }
 
 // ⌨️ Excel-Grade Keyboard Navigation Handler
@@ -1004,11 +1026,11 @@ function handleTableInputKey(event, taskId, colName) {
       // Forward Tab
       if (colName === 'particulars') {
         event.preventDefault();
-        const nextInput = currentRow.querySelector('input[data-col="period"]');
+        const nextInput = currentRow.querySelector('[data-col="period"]');
         if (nextInput) nextInput.focus();
       } else if (colName === 'period') {
         event.preventDefault();
-        const nextInput = currentRow.querySelector('input[data-col="remark"]');
+        const nextInput = currentRow.querySelector('[data-col="remark"]');
         if (nextInput) nextInput.focus();
       } else if (colName === 'remark') {
         event.preventDefault();
@@ -1019,7 +1041,7 @@ function handleTableInputKey(event, taskId, colName) {
           // Move to particulars of next row
           const nextRow = rows[rowIndex + 1];
           if (nextRow) {
-            const nextInput = nextRow.querySelector('input[data-col="particulars"]');
+            const nextInput = nextRow.querySelector('[data-col="particulars"]');
             if (nextInput) nextInput.focus();
           }
         }
@@ -1028,18 +1050,18 @@ function handleTableInputKey(event, taskId, colName) {
       // Shift + Tab (Backward)
       if (colName === 'remark') {
         event.preventDefault();
-        const prevInput = currentRow.querySelector('input[data-col="period"]');
+        const prevInput = currentRow.querySelector('[data-col="period"]');
         if (prevInput) prevInput.focus();
       } else if (colName === 'period') {
         event.preventDefault();
-        const prevInput = currentRow.querySelector('input[data-col="particulars"]');
+        const prevInput = currentRow.querySelector('[data-col="particulars"]');
         if (prevInput) prevInput.focus();
       } else if (colName === 'particulars') {
         if (rowIndex > 0) {
           event.preventDefault();
           const prevRow = rows[rowIndex - 1];
           if (prevRow) {
-            const prevInput = prevRow.querySelector('input[data-col="remark"]');
+            const prevInput = prevRow.querySelector('[data-col="remark"]');
             if (prevInput) prevInput.focus();
           }
         }
@@ -1055,7 +1077,7 @@ function handleTableInputKey(event, taskId, colName) {
       event.preventDefault();
       const nextRow = rows[rowIndex + 1];
       if (nextRow) {
-        const input = nextRow.querySelector(`input[data-col="${colName}"]`);
+        const input = nextRow.querySelector(`[data-col="${colName}"]`);
         if (input) input.focus();
       }
     }
@@ -1065,7 +1087,7 @@ function handleTableInputKey(event, taskId, colName) {
       event.preventDefault();
       const prevRow = rows[rowIndex - 1];
       if (prevRow) {
-        const input = prevRow.querySelector(`input[data-col="${colName}"]`);
+        const input = prevRow.querySelector(`[data-col="${colName}"]`);
         if (input) input.focus();
       }
     }
