@@ -214,22 +214,22 @@ function updateCloudSyncIndicator(status) {
   if (!cloudStatusBadgeEl || !cloudStatusTextEl || !cloudIndicatorDotEl) return;
 
   if (status === 'connected') {
-    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-md text-xs font-extrabold shadow transition cursor-pointer";
-    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-    cloudStatusTextEl.textContent = "☁️ Cloud Live";
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400 rounded-lg text-xs font-black shadow-md transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2.5 h-2.5 rounded-full bg-white animate-pulse";
+    cloudStatusTextEl.textContent = "☁️ Cloud Live Sync";
   } else if (status === 'syncing') {
-    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 rounded-md text-xs font-bold shadow transition cursor-pointer";
-    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-amber-400 animate-spin";
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 border border-amber-300 rounded-lg text-xs font-black shadow-md transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2.5 h-2.5 rounded-full bg-slate-950 animate-spin";
     cloudStatusTextEl.textContent = "🔄 Syncing...";
   } else if (status === 'error') {
-    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-500/40 rounded-md text-xs font-bold shadow transition cursor-pointer";
-    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-red-400";
+    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white border border-red-400 rounded-lg text-xs font-black shadow-md transition cursor-pointer";
+    cloudIndicatorDotEl.className = "w-2.5 h-2.5 rounded-full bg-white";
     cloudStatusTextEl.textContent = "⚠️ Cloud Error";
   } else {
-    // Disconnected / Local Mode
-    cloudStatusBadgeEl.className = "flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-md text-xs font-semibold shadow transition cursor-pointer";
-    cloudIndicatorDotEl.className = "w-2 h-2 rounded-full bg-slate-400";
-    cloudStatusTextEl.textContent = "☁️ Cloud Setup";
+    // Disconnected / Setup Mode: Bright glowing Sky Blue button
+    cloudStatusBadgeEl.className = "flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg text-xs font-black shadow-md border border-sky-300 transition cursor-pointer cloud-pulse-btn";
+    cloudIndicatorDotEl.className = "w-2.5 h-2.5 rounded-full bg-white animate-pulse";
+    cloudStatusTextEl.textContent = "☁️ Cloud Database";
   }
 }
 

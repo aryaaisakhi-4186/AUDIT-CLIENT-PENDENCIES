@@ -27,13 +27,13 @@
     }
   </script>
 </head>
-<body class="min-h-screen bg-slate-100/90 text-slate-800 antialiased flex flex-col">
+<body class="min-h-screen bg-slate-100/90 text-slate-800 antialiased flex flex-col w-full">
 
   <!-- ============================================================== -->
   <!-- ⏰ 11:00 AM ALARM TRIGGERED NOTIFICATION BANNER (When Ringing) -->
   <!-- ============================================================== -->
-  <div id="alarm-trigger-banner" class="hidden bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white px-4 py-3 shadow-xl z-50 sticky top-0 border-b-2 border-amber-300 animate-pulse no-print">
-    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+  <div id="alarm-trigger-banner" class="hidden bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white px-4 py-3 shadow-xl z-50 sticky top-0 border-b-2 border-amber-300 animate-pulse no-print w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3">
       <div class="flex items-center gap-3">
         <span class="text-3xl alarm-ringing">🔔</span>
         <div>
@@ -55,9 +55,9 @@
     </div>
   </div>
 
-  <!-- Top App Navigation (Screen only) -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md no-print top-navbar sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between flex-wrap gap-2">
+  <!-- Top App Navigation (Full Width Screen) -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md no-print top-navbar sticky top-0 z-40 w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between flex-wrap gap-2">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center font-bold text-slate-950 text-xl shadow">
           A
@@ -73,14 +73,14 @@
       <!-- Action Buttons -->
       <div class="flex items-center gap-2 flex-wrap">
         
-        <!-- ☁️ Real-time Cloud Database Status Button -->
+        <!-- ☁️ Big Prominent Google Firebase Cloud Button -->
         <button 
           id="cloud-status-badge"
           onclick="openCloudModal()" 
-          title="Google Firebase Cloud Sync Status"
-          class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-bold shadow transition cursor-pointer">
-          <span class="w-2 h-2 rounded-full bg-slate-400" id="cloud-indicator-dot"></span>
-          <span id="cloud-status-text">☁️ Cloud Setup</span>
+          title="Click to Connect Google Firebase Cloud Database"
+          class="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg text-xs font-black shadow-md border border-sky-300 transition cursor-pointer cloud-pulse-btn">
+          <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse" id="cloud-indicator-dot"></span>
+          <span id="cloud-status-text">☁️ Cloud Database</span>
         </button>
 
         <!-- ⏰ 11:00 AM Alarm Setting Badge -->
@@ -163,15 +163,15 @@
   </header>
 
   <!-- ============================================================== -->
-  <!-- CLIENT MANAGEMENT, SEARCH & TABS BAR (Screen only)            -->
+  <!-- CLIENT MANAGEMENT, SEARCH & TABS BAR (Full Screen Width)      -->
   <!-- ============================================================== -->
-  <div class="bg-slate-200/95 border-b border-slate-300 px-4 sm:px-6 lg:px-8 py-2.5 no-print tabs-bar shadow-inner">
-    <div class="max-w-7xl mx-auto space-y-2">
+  <div class="bg-slate-200/95 border-b border-slate-300 px-4 sm:px-6 lg:px-8 py-2.5 no-print tabs-bar shadow-inner w-full">
+    <div class="w-full space-y-2">
       
       <!-- Top Row: Client Search & Filter Status (Pending only vs Completed vs All) -->
       <div class="flex items-center justify-between gap-3 flex-wrap">
         
-        <div class="flex items-center gap-2 flex-1 max-w-lg">
+        <div class="flex items-center gap-2 flex-1 max-w-xl">
           <!-- Client Search Input -->
           <div class="relative w-full">
             <input 
@@ -215,7 +215,7 @@
         <div class="flex items-center gap-2 flex-shrink-0">
           <button 
             onclick="openAddClientModal()" 
-            class="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition">
+            class="flex items-center gap-1 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
             </svg>
@@ -225,7 +225,7 @@
           <button 
             onclick="deleteCurrentClient()" 
             title="Delete Current Client Tab"
-            class="px-2 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold shadow-sm transition">
+            class="px-2.5 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold shadow-sm transition">
             🗑️ Delete Tab
           </button>
         </div>
@@ -233,18 +233,18 @@
       </div>
 
       <!-- Bottom Row: Horizontal Client Tabs -->
-      <div class="flex items-center gap-2 overflow-x-auto tabs-scroll-container pb-1 pt-0.5" id="client-tabs">
+      <div class="flex items-center gap-2 overflow-x-auto tabs-scroll-container pb-1 pt-0.5 w-full" id="client-tabs">
         <!-- Client Tabs Injected by JS -->
       </div>
 
     </div>
   </div>
 
-  <!-- Main Content Container -->
-  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 main-container">
+  <!-- Main Content Container (Full Width Fluid) -->
+  <main class="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 main-container">
 
-    <!-- KPI Summary Bar (Screen only) -->
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 no-print stats-banner">
+    <!-- KPI Summary Bar (Screen only - Full Width) -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5 no-print stats-banner w-full">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Requirements</p>
@@ -286,13 +286,13 @@
       </div>
     </div>
 
-    <!-- Paper Document Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Paper Document Card (Full Screen Fluid) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full">
 
       <!-- ============================================================== -->
       <!-- REQUIRED LETTERHEAD HEADER FORMAT (Exact requirement from user) -->
       <!-- ============================================================== -->
-      <div class="letterhead-box bg-slate-50 border-b border-slate-300 px-6 sm:px-10 py-7 text-center">
+      <div class="letterhead-box bg-slate-50 border-b border-slate-300 px-6 sm:px-10 py-7 text-center w-full">
         
         <!-- 1st Line: M/S. ARYA ASSOCIATES -->
         <h2 class="letterhead-title text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-wider uppercase mb-3">
@@ -302,7 +302,7 @@
         <div class="w-24 h-0.5 bg-amber-500 mx-auto mb-3"></div>
 
         <!-- 2nd Line: CLIENT NAME (Bold, Badi Size & Direct Editable) -->
-        <div class="max-w-2xl mx-auto mb-2">
+        <div class="max-w-4xl mx-auto mb-2">
           <input 
             type="text" 
             id="client-name-input" 
@@ -335,10 +335,10 @@
         <p class="text-xs font-medium text-slate-500 mt-2">AUDIT REQUIREMENTS & CLIENT PENDENCY CHECKLIST</p>
       </div>
 
-      <!-- Action & Filter Toolbar (Screen only) -->
-      <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
+      <!-- Action & Filter Toolbar (Screen only - Full Width) -->
+      <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print w-full">
         <!-- Search -->
-        <div class="relative flex-1 min-w-[220px] max-w-md">
+        <div class="relative flex-1 min-w-[260px] max-w-lg">
           <input 
             type="text" 
             id="search-tasks" 
@@ -380,9 +380,9 @@
       </div>
 
       <!-- ============================================================== -->
-      <!-- TABLE FORMAT: TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
+      <!-- TABLE FORMAT (100% Full Width): TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
       <!-- ============================================================== -->
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto w-full">
         <table class="w-full text-left border-collapse audit-table text-sm">
           <thead>
             <tr>
@@ -401,13 +401,13 @@
               <th class="py-3 px-3 text-center w-16 border-r border-slate-300">
                 S. No.
               </th>
-              <th class="py-3 px-4 border-r border-slate-300">
+              <th class="py-3 px-4 border-r border-slate-300 min-w-[320px]">
                 PARTICULARS
               </th>
               <th class="py-3 px-4 w-48 border-r border-slate-300">
                 PERIOD
               </th>
-              <th class="py-3 px-4 border-r border-slate-300">
+              <th class="py-3 px-4 border-r border-slate-300 min-w-[260px]">
                 REMARK
               </th>
               <th class="py-3 px-3 text-center w-28 no-print">
@@ -422,7 +422,7 @@
       </div>
 
       <!-- Table Bottom Quick Add Helper (Screen only) -->
-      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 no-print">
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 no-print w-full">
         <div class="flex items-center gap-2">
           <span>💡 <em>Tip: You can edit Particulars, Period, and Remarks directly inside the table.</em></span>
         </div>
@@ -487,9 +487,9 @@
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
           <p class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">📖 2-Minute Free Setup Guide:</p>
           <ol class="list-decimal list-inside space-y-1 text-slate-600 leading-relaxed">
-            <li>Open <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 font-bold underline">console.firebase.google.com</a> (Login with your Gmail).</li>
+            <li>Open <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 font-bold underline">console.firebase.google.com</a> (Login with Gmail).</li>
             <li>Click <strong>"Create Project"</strong> (e.g. name it <em>Audit-2026</em>).</li>
-            <li>In left menu, click <strong>"Build > Realtime Database"</strong> &rarr; Click <strong>"Create Database"</strong> (select Test Mode / allow read/write).</li>
+            <li>In left menu, click <strong>"Build > Realtime Database"</strong> &rarr; Click <strong>"Create Database"</strong> (select Test Mode).</li>
             <li>Go to <strong>Project Settings (⚙️) > General</strong> &rarr; Under <em>Your apps</em>, click <strong>Web (&lt;/&gt;)</strong>.</li>
             <li>Copy the <strong>firebaseConfig</strong> code and paste it below!</li>
           </ol>
@@ -732,8 +732,8 @@
   </div>
 
   <!-- Footer (Screen only) -->
-  <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center no-print mt-auto border-t border-slate-800">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+  <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center no-print mt-auto border-t border-slate-800 w-full">
+    <div class="w-full px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
       <p>&copy; 2026 <strong>M/S. ARYA ASSOCIATES</strong> &bull; Audit & Client Pendencies System</p>
       <p class="text-slate-500" id="footer-sync-note">Online Cloud Sync & Local Storage Active.</p>
     </div>
