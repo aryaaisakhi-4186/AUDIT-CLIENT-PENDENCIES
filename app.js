@@ -640,28 +640,15 @@ async function shareLetterheadPDFOnWhatsApp() {
 
     // Check if device supports direct file sharing (Mobile Phones, iPads, Chrome Web Share)
     if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      // Send ONLY the PDF file without any auto-generated message text
       await navigator.share({
-        files: [pdfFile],
-        title: `Audit Pendency Letterhead - ${client.name}`,
-        text: `*M/S. ARYA ASSOCIATES*\nOfficial Audit Requirements & Pendency Letterhead PDF for *${client.name}* (${client.fy || 'FY 2025-26'}). Kindly review the attached PDF.`
+        files: [pdfFile]
       });
     } else {
-      // Desktop / Web WhatsApp flow: Automatically download PDF file and launch WhatsApp
+      // Desktop / Web WhatsApp flow: Automatically download PDF file and launch WhatsApp without text
       await html2pdf().set(opt).from(element).save();
 
-      const msgText = encodeURIComponent(
-        `*M/S. ARYA ASSOCIATES*\n` +
-        `═══════════════════════════\n` +
-        `🏢 *Client:* ${client.name}\n` +
-        `📅 *Period:* ${client.fy || 'FINANCIAL YEAR 2025-26'}\n` +
-        `📄 *Document:* Official Audit Pendency Letterhead PDF\n` +
-        `═══════════════════════════\n\n` +
-        `Dear Sir/Madam,\n` +
-        `Please find attached our official Letterhead PDF requisition for the pending audit documents & records. Kindly review the attached PDF file and arrange the records at the earliest.\n\n` +
-        `Thank you,\n*Audit Team*\n*M/S. ARYA ASSOCIATES*`
-      );
-
-      let waUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${msgText}` : `https://api.whatsapp.com/send?text=${msgText}`;
+      let waUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}` : `https://api.whatsapp.com/send`;
       window.open(waUrl, '_blank');
       alert(`✅ Official Letterhead PDF downloaded!\n\nWhatsApp has been opened — simply attach/drag the downloaded PDF "${fileName}" to the chat.`);
     }
