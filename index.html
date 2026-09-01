@@ -9,6 +9,8 @@
   <!-- Firebase SDKs (Compat version for direct single-page web app) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- html2pdf.js for Client-Side Direct Letterhead PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css">
   <script>
@@ -33,7 +35,7 @@
   <!-- ⏰ 11:00 AM ALARM TRIGGERED NOTIFICATION BANNER (When Ringing) -->
   <!-- ============================================================== -->
   <div id="alarm-trigger-banner" class="hidden bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white px-4 py-3 shadow-xl z-50 sticky top-0 border-b-2 border-amber-300 animate-pulse no-print w-full">
-    <div class="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3">
+    <div class="w-full px-2 sm:px-4 flex items-center justify-between flex-wrap gap-3">
       <div class="flex items-center gap-3">
         <span class="text-3xl alarm-ringing">🔔</span>
         <div>
@@ -73,14 +75,14 @@
       <!-- Action Buttons -->
       <div class="flex items-center gap-2 flex-wrap">
         
-        <!-- ☁️ Big Prominent Google Firebase Cloud Button -->
+        <!-- ☁️ Online Cloud Status Badge -->
         <button 
           id="cloud-status-badge"
           onclick="openCloudModal()" 
-          title="Click to Connect Google Firebase Cloud Database"
-          class="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg text-xs font-black shadow-md border border-sky-300 transition cursor-pointer cloud-pulse-btn">
+          title="Google Firebase Cloud is 100% Online & Live Syncing"
+          class="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-md border border-emerald-400 transition cursor-pointer">
           <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse" id="cloud-indicator-dot"></span>
-          <span id="cloud-status-text">☁️ Cloud Database</span>
+          <span id="cloud-status-text">☁️ Cloud Online (Live Sync)</span>
         </button>
 
         <!-- ⏰ 11:00 AM Alarm Setting Badge -->
@@ -103,15 +105,23 @@
           + Checklist
         </button>
 
-        <!-- Direct WhatsApp Message Button -->
+        <!-- 📄 WhatsApp Letterhead PDF Button -->
         <button 
           onclick="openWhatsAppModal()" 
-          title="Send pendency list on WhatsApp (Normal WhatsApp)"
-          class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow transition animate-pulse hover:animate-none">
+          title="Send Official Letterhead PDF to Client on WhatsApp"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-black shadow-md transition animate-pulse hover:animate-none">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
             <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
           </svg>
-          WhatsApp
+          WhatsApp PDF
+        </button>
+
+        <!-- Direct Download PDF Button -->
+        <button 
+          onclick="downloadLetterheadPDF()" 
+          title="Download Letterhead PDF File Directly"
+          class="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow transition">
+          📥 PDF
         </button>
 
         <!-- Legal Print Button -->
@@ -142,7 +152,7 @@
         <button 
           onclick="exportToExcel()" 
           title="Export current client to Excel CSV"
-          class="flex items-center gap-1 px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-medium transition">
+          class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-medium transition">
           📊 Excel
         </button>
 
@@ -155,15 +165,6 @@
           class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-          </svg>
-        </button>
-        
-        <button 
-          onclick="restoreDataPrompt()" 
-          title="Restore data from backup JSON"
-          class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
           </svg>
         </button>
       </div>
@@ -252,62 +253,62 @@
   <main class="w-full px-2 sm:px-3 py-3 flex-1 main-container">
 
     <!-- KPI Summary Bar (Screen only - Full Width) -->
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5 no-print stats-banner w-full">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4 no-print stats-banner w-full">
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Requirements</p>
-          <p class="text-2xl font-black text-slate-800 mt-1" id="total-count">0</p>
+          <p class="text-2xl font-black text-slate-800 mt-0.5" id="total-count">0</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+        <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
           📋
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-medium text-red-600 uppercase tracking-wider">Pending Tasks</p>
-          <p class="text-2xl font-black text-red-600 mt-1" id="pending-count">0</p>
+          <p class="text-2xl font-black text-red-600 mt-0.5" id="pending-count">0</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold">
+        <div class="w-9 h-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold">
           ⏳
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Received / Done</p>
-          <p class="text-2xl font-black text-emerald-600 mt-1" id="completed-count">0</p>
+          <p class="text-2xl font-black text-emerald-600 mt-0.5" id="completed-count">0</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+        <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
           ✅
         </div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
         <div class="flex items-center justify-between">
           <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Audit Progress</p>
           <span class="text-xs font-bold text-blue-600" id="progress-percent">0%</span>
         </div>
-        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200 mt-2">
-          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200 mt-1.5">
+          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
     </div>
 
     <!-- Paper Document Card (Full Screen Fluid) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden w-full" id="audit-main-document-card">
 
       <!-- ============================================================== -->
       <!-- REQUIRED LETTERHEAD HEADER FORMAT (Exact requirement from user) -->
       <!-- ============================================================== -->
-      <div class="letterhead-box bg-slate-50 border-b border-slate-300 px-6 sm:px-10 py-7 text-center w-full">
+      <div class="letterhead-box bg-slate-50 border-b border-slate-300 px-6 sm:px-10 py-6 text-center w-full">
         
         <!-- 1st Line: M/S. ARYA ASSOCIATES -->
-        <h2 class="letterhead-title text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-wider uppercase mb-3">
+        <h2 class="letterhead-title text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-wider uppercase mb-2">
           M/S. ARYA ASSOCIATES
         </h2>
         
-        <div class="w-24 h-0.5 bg-amber-500 mx-auto mb-3"></div>
+        <div class="w-24 h-0.5 bg-amber-500 mx-auto mb-2"></div>
 
         <!-- 2nd Line: CLIENT NAME (Bold, Badi Size & Direct Editable) -->
         <div class="max-w-4xl mx-auto mb-2">
@@ -344,7 +345,7 @@
       </div>
 
       <!-- Action & Filter Toolbar (Screen only - Full Width) -->
-      <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print w-full">
+      <div class="p-3 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print w-full">
         <!-- Search -->
         <div class="relative flex-1 min-w-[260px] max-w-lg">
           <input 
@@ -462,20 +463,124 @@
   </main>
 
   <!-- ============================================================== -->
+  <!-- 📄 OFFICIAL LETTERHEAD PDF TEMPLATE (RENDERED DIRECTLY TO PDF) -->
+  <!-- ============================================================== -->
+  <div id="pdf-export-render-box" class="hidden">
+    <!-- Content injected dynamically by JS when generating Letterhead PDF -->
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 📄 WHATSAPP LETTERHEAD PDF MODAL (SHARE OFFICIAL PDF)          -->
+  <!-- ============================================================== -->
+  <div id="whatsapp-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-emerald-700 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-lg">
+            📄
+          </div>
+          <div>
+            <h3 class="font-black text-base leading-tight">Send Letterhead PDF on WhatsApp</h3>
+            <p class="text-xs text-emerald-100">Official formatted audit document (No plain text messages)</p>
+          </div>
+        </div>
+        <button onclick="closeWhatsAppModal()" class="text-emerald-100 hover:text-white text-xl font-bold p-1">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4">
+        
+        <!-- Mode Toggle: Pending only vs All -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Include in Letterhead PDF:
+          </label>
+          <div class="inline-flex rounded-lg border border-slate-200 p-1 bg-slate-50 gap-1 w-full">
+            <button 
+              id="wa-mode-pending" 
+              onclick="setWhatsAppMode('pending')" 
+              class="flex-1 py-2 rounded-md bg-emerald-600 text-white font-bold text-xs shadow text-center">
+              ⏳ Pending Only (<span id="wa-pending-count-badge">0</span> Items)
+            </button>
+            <button 
+              id="wa-mode-all" 
+              onclick="setWhatsAppMode('all')" 
+              class="flex-1 py-2 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold text-center">
+              📋 All Checklist Items
+            </button>
+          </div>
+        </div>
+
+        <!-- Client Mobile number input -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Client WhatsApp Number (Optional)
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-slate-400 font-semibold text-sm">+91</span>
+            <input 
+              type="text" 
+              id="wa-phone-number" 
+              placeholder="Enter 10-digit number (or leave blank to pick chat)" 
+              class="w-full pl-12 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium"
+            />
+          </div>
+        </div>
+
+        <!-- Info Box for Official Letterhead PDF -->
+        <div class="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1">
+          <p class="font-extrabold flex items-center gap-1.5 text-emerald-950">
+            <span>✨</span> Official CA Letterhead PDF Format:
+          </p>
+          <ul class="list-disc list-inside text-emerald-800 text-[11px] space-y-0.5">
+            <li>Includes <strong>M/S. ARYA ASSOCIATES</strong> Letterhead Header</li>
+            <li>Includes <strong>Client Name & Financial Year</strong></li>
+            <li>Includes Formatted <strong>Audit Requirements Table</strong></li>
+            <li>Includes <strong>Authorized Signature Space</strong> & Date</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between gap-2">
+        <button 
+          onclick="downloadLetterheadPDF()" 
+          class="px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg text-xs font-bold hover:bg-slate-100 transition flex items-center gap-1.5 shadow-sm">
+          📥 Download PDF
+        </button>
+
+        <button 
+          id="btn-share-whatsapp-pdf"
+          onclick="shareLetterheadPDFOnWhatsApp()" 
+          class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-lg transition transform active:scale-95">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          Send Letterhead PDF
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
   <!-- ☁️ GOOGLE FIREBASE CLOUD DATABASE SETUP MODAL                  -->
   <!-- ============================================================== -->
   <div id="cloud-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden no-print">
     <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
-      
-      <!-- Modal Header -->
       <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
             ☁️
           </div>
           <div>
             <h3 class="font-bold text-base leading-tight text-white">Google Firebase Cloud Database</h3>
-            <p class="text-xs text-slate-400">Multi-Device Real-Time Online Storage Setup</p>
+            <p class="text-xs text-emerald-400">100% Online Real-Time Multi-Device Sync</p>
           </div>
         </div>
         <button onclick="closeCloudModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">
@@ -483,71 +588,31 @@
         </button>
       </div>
 
-      <!-- Modal Body -->
       <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-        
-        <!-- Live Status Info Box -->
         <div id="cloud-status-box" class="p-3.5 rounded-xl border flex items-center justify-between text-xs font-semibold">
           <!-- Dynamic status injected by JS -->
         </div>
 
-        <!-- 3 Simple Setup Steps -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
-          <p class="font-bold text-slate-900 uppercase tracking-wider text-[11px]">📖 2-Minute Free Setup Guide:</p>
-          <ol class="list-decimal list-inside space-y-1 text-slate-600 leading-relaxed">
-            <li>Open <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 font-bold underline">console.firebase.google.com</a> (Login with Gmail).</li>
-            <li>Click <strong>"Create Project"</strong> (e.g. name it <em>Audit-2026</em>).</li>
-            <li>In left menu, click <strong>"Build > Realtime Database"</strong> &rarr; Click <strong>"Create Database"</strong> (select Test Mode).</li>
-            <li>Go to <strong>Project Settings (⚙️) > General</strong> &rarr; Under <em>Your apps</em>, click <strong>Web (&lt;/&gt;)</strong>.</li>
-            <li>Copy the <strong>firebaseConfig</strong> code and paste it below!</li>
-          </ol>
-        </div>
-
-        <!-- Config Input Area -->
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-            Paste Firebase Config Object or JSON:
+            Connected Cloud Project:
           </label>
           <textarea 
             id="firebase-config-input" 
             rows="5" 
-            placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "audit-2026.firebaseapp.com",
-  databaseURL: "https://audit-2026-default-rtdb.firebaseio.com",
-  projectId: "audit-2026",
-  ...
-};' 
-            class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed">
+            readonly
+            class="w-full bg-slate-100 border border-slate-300 rounded-lg p-2.5 text-xs font-mono text-slate-700 focus:outline-none resize-none leading-relaxed">
           </textarea>
-          <p class="text-[11px] text-slate-400 mt-1">You can paste the entire snippet or JSON directly.</p>
         </div>
-
       </div>
 
-      <!-- Modal Footer -->
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end">
         <button 
-          id="cloud-disconnect-btn"
-          onclick="disconnectFirebaseCloud()" 
-          class="px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition hidden">
-          Disconnect Cloud
+          onclick="closeCloudModal()" 
+          class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black shadow-md transition">
+          OK / Close
         </button>
-
-        <div class="flex items-center gap-2 ml-auto">
-          <button 
-            onclick="closeCloudModal()" 
-            class="px-4 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-100 transition">
-            Close
-          </button>
-          <button 
-            onclick="saveAndConnectFirebase()" 
-            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black shadow-md transition flex items-center gap-1">
-            🚀 Connect Cloud
-          </button>
-        </div>
       </div>
-
     </div>
   </div>
 
@@ -570,8 +635,6 @@
       </div>
 
       <div class="p-6 space-y-4">
-        
-        <!-- Enable/Disable Alarm Toggle -->
         <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200">
           <div>
             <p class="font-bold text-xs uppercase tracking-wider text-slate-800">Daily Alarm Status</p>
@@ -583,7 +646,6 @@
           </label>
         </div>
 
-        <!-- Alarm Time Picker -->
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
             Reminder Time (Morning)
@@ -597,7 +659,6 @@
           <p class="text-[11px] text-slate-400 mt-1">Set to 11:00 AM for daily morning audit review.</p>
         </div>
 
-        <!-- Buttons for Test Sound and Enable Desktop Notifications -->
         <div class="grid grid-cols-2 gap-2 pt-1">
           <button 
             type="button"
@@ -613,7 +674,6 @@
             🔔 Popup Alerts
           </button>
         </div>
-
       </div>
 
       <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2">
@@ -631,119 +691,11 @@
     </div>
   </div>
 
-  <!-- ============================================================== -->
-  <!-- WHATSAPP MESSAGE MODAL (NORMAL WHATSAPP)                       -->
-  <!-- ============================================================== -->
-  <div id="whatsapp-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden no-print">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
-      
-      <!-- Modal Header -->
-      <div class="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-white">
-            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-base leading-tight">Send WhatsApp Message</h3>
-            <p class="text-xs text-emerald-100">Directly via standard WhatsApp</p>
-          </div>
-        </div>
-        <button onclick="closeWhatsAppModal()" class="text-emerald-100 hover:text-white text-xl font-bold p-1">
-          ✕
-        </button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="p-6 space-y-4">
-        
-        <!-- Mobile number input -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-            Client Mobile Number (Optional)
-          </label>
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-slate-400 font-semibold text-sm">+91</span>
-            <input 
-              type="text" 
-              id="wa-phone-number" 
-              placeholder="Enter 10-digit mobile number (or leave blank to pick chat)" 
-              class="w-full pl-12 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            />
-          </div>
-          <p class="text-[11px] text-slate-400 mt-1">If left blank, standard WhatsApp will open with contact picker.</p>
-        </div>
-
-        <!-- Mode Toggle: Pending only vs All -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Select Items to Include:
-          </label>
-          <div class="inline-flex rounded-lg border border-slate-200 p-1 bg-slate-50 gap-1 w-full">
-            <button 
-              id="wa-mode-pending" 
-              onclick="setWhatsAppMode('pending')" 
-              class="flex-1 py-1.5 rounded-md bg-emerald-600 text-white font-bold text-xs shadow text-center">
-              ⏳ Pending Only
-            </button>
-            <button 
-              id="wa-mode-all" 
-              onclick="setWhatsAppMode('all')" 
-              class="flex-1 py-1.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold text-center">
-              📋 All Items
-            </button>
-          </div>
-        </div>
-
-        <!-- Live Preview Box -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Message Preview:
-            </label>
-            <button 
-              id="wa-copy-btn"
-              onclick="copyWhatsAppText()" 
-              class="text-xs text-emerald-700 font-semibold hover:underline flex items-center gap-1">
-              📋 Copy Text
-            </button>
-          </div>
-          <textarea 
-            id="wa-preview-text" 
-            readonly 
-            rows="6" 
-            class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs font-mono text-slate-700 focus:outline-none resize-none leading-relaxed">
-          </textarea>
-        </div>
-
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2">
-        <button 
-          onclick="closeWhatsAppModal()" 
-          class="px-4 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-100 transition">
-          Cancel
-        </button>
-        <button 
-          onclick="sendDirectWhatsApp()" 
-          class="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-md transition">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-          </svg>
-          Open in WhatsApp
-        </button>
-      </div>
-
-    </div>
-  </div>
-
   <!-- Footer (Screen only) -->
-  <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center no-print mt-auto border-t border-slate-800 w-full">
+  <footer class="bg-slate-900 text-slate-400 text-xs py-3 px-4 text-center no-print mt-auto border-t border-slate-800 w-full">
     <div class="w-full px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
       <p>&copy; 2026 <strong>M/S. ARYA ASSOCIATES</strong> &bull; Audit & Client Pendencies System</p>
-      <p class="text-slate-500" id="footer-sync-note">Online Cloud Sync & Local Storage Active.</p>
+      <p class="text-emerald-400 font-semibold" id="footer-sync-note">🟢 ☁️ Google Firebase Realtime Cloud Database Connected.</p>
     </div>
   </footer>
 

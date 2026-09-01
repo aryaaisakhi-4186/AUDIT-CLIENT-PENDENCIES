@@ -1,14 +1,14 @@
 /**
  * AUDIT-2026: Client Pendencies & Audit Requirements Management App
  * Designed for M/S. ARYA ASSOCIATES
- * 100% Fully Automated Online Google Firebase Cloud Integration
+ * 100% Fully Automated Online Google Firebase Cloud & Letterhead PDF Generator
  */
 
 const STORAGE_KEY = 'audit_2026_client_pendencies_db';
 const ALARM_STORAGE_KEY = 'audit_2026_alarm_settings';
 const FIREBASE_CONFIG_KEY = 'audit_2026_firebase_config';
 
-// ☁️ EMBEDDED DIRECT ONLINE CLOUD CONFIGURATION (Auto-connects on all devices out of the box)
+// ☁️ EMBEDDED DIRECT ONLINE CLOUD CONFIGURATION (Auto-connects on all devices)
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAez-S9Miz1-rJnwMZyLHxSEDdXjPRTBFC",
   authDomain: "audit-requirements.firebaseapp.com",
@@ -158,7 +158,6 @@ function saveData() {
 // =========================================================================
 
 function initFirebaseCloud() {
-  // Use user's custom saved config OR built-in embedded config directly
   let config = DEFAULT_FIREBASE_CONFIG;
   const savedConfig = localStorage.getItem(FIREBASE_CONFIG_KEY);
   if (savedConfig) {
@@ -168,7 +167,6 @@ function initFirebaseCloud() {
   }
 
   try {
-    // Initialize or get existing app
     if (!firebase.apps.length) {
       firebaseApp = firebase.initializeApp(config);
     } else {
@@ -180,7 +178,6 @@ function initFirebaseCloud() {
 
     updateCloudSyncIndicator('syncing');
 
-    // Realtime Cloud Listener: When ANY change happens on Mobile/Laptop, sync instantly!
     firebaseDataRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
       if (cloudData && cloudData.clients && cloudData.clients.length > 0) {
@@ -192,14 +189,12 @@ function initFirebaseCloud() {
         renderAll();
         isSyncingFromCloud = false;
       } else if (!cloudData) {
-        // If cloud database is empty initially, seed it with current data
         firebaseDataRef.set(appData);
       }
       isCloudConnected = true;
       updateCloudSyncIndicator('connected');
     }, (err) => {
-      console.warn('Firebase connection notice:', err);
-      // Fallback
+      console.warn('Firebase notice:', err);
       isCloudConnected = true;
       updateCloudSyncIndicator('connected');
     });
@@ -232,7 +227,6 @@ function updateCloudSyncIndicator(status) {
   }
 }
 
-// Open Cloud Setup Modal
 function openCloudModal() {
   const modal = document.getElementById('cloud-modal');
   const configInput = document.getElementById('firebase-config-input');
@@ -263,20 +257,285 @@ function closeCloudModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function saveAndConnectFirebase() {
-  closeCloudModal();
-  alert('✅ Google Firebase Cloud is already pre-configured and 100% online!');
+// =========================================================================
+// 📄 OFFICIAL LETTERHEAD PDF ENGINE & DIRECT WHATSAPP SHARING
+// =========================================================================
+
+// Generate High-Definition Printable Letterhead HTML Structure
+function generateLetterheadHTML() {
+  const client = getActiveClient();
+  if (!client) return '';
+
+  const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const rawFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
+
+  let tasksToInclude = client.tasks || [];
+  if (whatsappFilterMode === 'pending') {
+    tasksToInclude = tasksToInclude.filter(t => !t.checked);
+  }
+
+  let tableRowsHTML = '';
+  if (tasksToInclude.length === 0) {
+    tableRowsHTML = `
+      <tr>
+        <td colspan="4" style="padding: 24px; text-align: center; color: #16a34a; font-weight: bold; font-size: 14px;">
+          ✓ All audit requirements & documents have been completely received for this period!
+        </td>
+      </tr>
+    `;
+  } else {
+    tasksToInclude.forEach((task, index) => {
+      tableRowsHTML += `
+        <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding: 9px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 42px;">
+            ${index + 1}
+          </td>
+          <td style="padding: 9px 12px; font-weight: 700; color: #0f172a; font-size: 12px; border-right: 1px solid #cbd5e1; line-height: 1.4;">
+            ${escapeHtml(task.particulars || 'Audit Requirement')}
+          </td>
+          <td style="padding: 9px 10px; font-weight: 600; color: #475569; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 130px;">
+            ${escapeHtml(task.period || cleanYear)}
+          </td>
+          <td style="padding: 9px 10px; font-size: 11px; color: ${task.checked ? '#16a34a' : '#b45309'}; font-weight: 600;">
+            ${task.remark && task.remark.trim() ? escapeHtml(task.remark.trim()) : (task.checked ? '✓ Received' : '⏳ Pending from Client')}
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  return `
+    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 28px 32px; width: 100%; box-sizing: border-box; position: relative;">
+      
+      <!-- LETTERHEAD TOP BRANDING -->
+      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 16px;">
+        <h1 style="font-family: 'Cinzel', serif; font-size: 23px; font-weight: 900; letter-spacing: 2px; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase;">
+          M/S. ARYA ASSOCIATES
+        </h1>
+        <div style="width: 80px; height: 2px; background-color: #b45309; margin: 0 auto 6px auto;"></div>
+        <p style="font-size: 11px; font-weight: 800; color: #475569; letter-spacing: 1px; margin: 0; text-transform: uppercase;">
+          AUDIT REQUIREMENTS & CLIENT PENDENCY REQUISITION
+        </p>
+      </div>
+
+      <!-- CLIENT & DATE METADATA BOX -->
+      <div style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+        <div style="flex: 1;">
+          <p style="margin: 0 0 3px 0; font-size: 10.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
+            ${escapeHtml(client.name)}
+          </h2>
+        </div>
+        <div style="text-align: right; min-width: 170px;">
+          <div style="display: inline-block; background-color: #0f172a; color: #fbbf24; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 900; margin-bottom: 4px;">
+            📅 FY ${escapeHtml(cleanYear)}
+          </div>
+          <p style="margin: 2px 0 0 0; font-size: 11px; font-weight: 700; color: #475569;">
+            <strong>Date:</strong> ${todayStr}
+          </p>
+        </div>
+      </div>
+
+      <!-- SUBJECT TITLE -->
+      <div style="margin-bottom: 14px;">
+        <p style="margin: 0; font-size: 12px; font-weight: 800; color: #0f172a;">
+          <span style="text-decoration: underline;">SUB:</span> Requisition for Pending Statutory Audit Documents & Records (${whatsappFilterMode === 'pending' ? 'Pending Items Only' : 'Complete Audit Checklist'})
+        </p>
+      </div>
+
+      <!-- AUDIT CHECKLIST TABLE -->
+      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #0f172a; margin-bottom: 20px; font-size: 11.5px;">
+        <thead>
+          <tr style="background-color: #0f172a; color: #ffffff;">
+            <th style="padding: 8px 6px; text-align: center; width: 42px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+              S. No.
+            </th>
+            <th style="padding: 8px 12px; text-align: left; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+              PARTICULARS OF AUDIT REQUIREMENT
+            </th>
+            <th style="padding: 8px 10px; text-align: left; width: 130px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+              PERIOD
+            </th>
+            <th style="padding: 8px 10px; text-align: left; width: 170px; font-size: 10.5px; font-weight: 900; text-transform: uppercase;">
+              STATUS / REMARKS
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHTML}
+        </tbody>
+      </table>
+
+      <!-- AUDITOR FOOTER NOTE -->
+      <div style="background-color: #fffbeb; border-left: 3.5px solid #b45309; padding: 10px 14px; margin-bottom: 30px; border-radius: 4px;">
+        <p style="margin: 0; font-size: 11px; color: #78350f; font-weight: 600; line-height: 1.45;">
+          <strong>Important Note:</strong> Kindly arrange to provide the above pending records/clarifications at the earliest to facilitate smooth audit verification and statutory finalization.
+        </p>
+      </div>
+
+      <!-- SIGNATURE BLOCKS -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 35px; padding-top: 10px;">
+        <div style="text-align: center; width: 220px;">
+          <div style="border-bottom: 1.5px solid #0f172a; height: 35px; margin-bottom: 6px;"></div>
+          <p style="margin: 0; font-size: 11px; font-weight: 800; color: #0f172a;">Authorized SPOC / Signature</p>
+          <p style="margin: 2px 0 0 0; font-size: 9.5px; color: #64748b;">(For ${escapeHtml(client.name)})</p>
+        </div>
+
+        <div style="text-align: center; width: 220px;">
+          <div style="border-bottom: 1.5px solid #0f172a; height: 35px; margin-bottom: 6px;"></div>
+          <p style="margin: 0; font-size: 11px; font-weight: 900; color: #0f172a;">For M/S. ARYA ASSOCIATES</p>
+          <p style="margin: 2px 0 0 0; font-size: 9.5px; color: #64748b;">Authorized Signatory / Audit Team</p>
+        </div>
+      </div>
+
+    </div>
+  `;
 }
 
-function disconnectFirebaseCloud() {
-  alert('Cloud database is permanently active for your workspace.');
+// Download Letterhead PDF File directly to Computer / Mobile
+async function downloadLetterheadPDF() {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const renderBox = document.getElementById('pdf-export-render-box');
+  if (!renderBox) return;
+
+  renderBox.innerHTML = generateLetterheadHTML();
+  renderBox.classList.remove('hidden');
+
+  const element = document.getElementById('pdf-letterhead-content');
+  const safeClientName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `Audit_Pendency_Letterhead_${safeClientName}.pdf`;
+
+  const opt = {
+    margin: [8, 8, 8, 8],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2.5, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    await html2pdf().set(opt).from(element).save();
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    alert('PDF generated. Check your downloads.');
+  } finally {
+    renderBox.classList.add('hidden');
+    renderBox.innerHTML = '';
+  }
+}
+
+// Share Official Letterhead PDF on WhatsApp
+async function shareLetterheadPDFOnWhatsApp() {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const phoneInput = document.getElementById('wa-phone-number');
+  let phone = phoneInput ? phoneInput.value.replace(/[^0-9]/g, '') : '';
+  if (phone.length === 10) phone = '91' + phone;
+
+  const renderBox = document.getElementById('pdf-export-render-box');
+  if (!renderBox) return;
+
+  renderBox.innerHTML = generateLetterheadHTML();
+  renderBox.classList.remove('hidden');
+
+  const element = document.getElementById('pdf-letterhead-content');
+  const safeClientName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `Audit_Pendency_Letterhead_${safeClientName}.pdf`;
+
+  const opt = {
+    margin: [8, 8, 8, 8],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2.5, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const shareBtn = document.getElementById('btn-share-whatsapp-pdf');
+  if (shareBtn) shareBtn.innerHTML = `⏳ Generating PDF...`;
+
+  try {
+    // Generate PDF Blob
+    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+    // Check if device supports direct file sharing (Mobile Phones, iPads, Chrome Web Share)
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({
+        files: [pdfFile],
+        title: `Audit Pendency Letterhead - ${client.name}`,
+        text: `*M/S. ARYA ASSOCIATES*\nOfficial Audit Requirements & Pendency Letterhead PDF for *${client.name}* (${client.fy || 'FY 2025-26'}). Kindly review the attached PDF.`
+      });
+    } else {
+      // Desktop / Web WhatsApp flow: Automatically download PDF file and launch WhatsApp
+      await html2pdf().set(opt).from(element).save();
+
+      const msgText = encodeURIComponent(
+        `*M/S. ARYA ASSOCIATES*\n` +
+        `═══════════════════════════\n` +
+        `🏢 *Client:* ${client.name}\n` +
+        `📅 *Period:* ${client.fy || 'FINANCIAL YEAR 2025-26'}\n` +
+        `📄 *Document:* Official Audit Pendency Letterhead PDF\n` +
+        `═══════════════════════════\n\n` +
+        `Dear Sir/Madam,\n` +
+        `Please find attached our official Letterhead PDF requisition for the pending audit documents & records. Kindly review the attached PDF file and arrange the records at the earliest.\n\n` +
+        `Thank you,\n*Audit Team*\n*M/S. ARYA ASSOCIATES*`
+      );
+
+      let waUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${msgText}` : `https://api.whatsapp.com/send?text=${msgText}`;
+      window.open(waUrl, '_blank');
+      alert(`✅ Official Letterhead PDF downloaded!\n\nWhatsApp has been opened — simply attach/drag the downloaded PDF "${fileName}" to the chat.`);
+    }
+
+  } catch (err) {
+    console.error('WhatsApp PDF share error:', err);
+    // Fallback: download PDF
+    await downloadLetterheadPDF();
+  } finally {
+    renderBox.classList.add('hidden');
+    renderBox.innerHTML = '';
+    if (shareBtn) shareBtn.innerHTML = `Send Letterhead PDF`;
+    closeWhatsAppModal();
+  }
+}
+
+// Modal open/close
+function openWhatsAppModal() {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const modal = document.getElementById('whatsapp-modal');
+  const pendingBadge = document.getElementById('wa-pending-count-badge');
+  if (pendingBadge && client.tasks) {
+    pendingBadge.textContent = client.tasks.filter(t => !t.checked).length;
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWhatsAppModal() {
+  const modal = document.getElementById('whatsapp-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function setWhatsAppMode(mode) {
+  whatsappFilterMode = mode;
+  document.getElementById('wa-mode-pending').className = mode === 'pending' 
+    ? 'flex-1 py-2 rounded-md bg-emerald-600 text-white font-bold text-xs shadow text-center' 
+    : 'flex-1 py-2 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold text-center';
+    
+  document.getElementById('wa-mode-all').className = mode === 'all' 
+    ? 'flex-1 py-2 rounded-md bg-emerald-600 text-white font-bold text-xs shadow text-center' 
+    : 'flex-1 py-2 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold text-center';
 }
 
 // =========================================================================
 // STANDARD APP FUNCTIONS
 // =========================================================================
 
-// Load Alarm Settings
 function loadAlarmSettings() {
   try {
     const saved = localStorage.getItem(ALARM_STORAGE_KEY);
@@ -289,7 +548,6 @@ function loadAlarmSettings() {
   updateAlarmHeaderBadge();
 }
 
-// Save Alarm Settings
 function saveAlarmSettings() {
   try {
     localStorage.setItem(ALARM_STORAGE_KEY, JSON.stringify(alarmSettings));
@@ -299,7 +557,6 @@ function saveAlarmSettings() {
   updateAlarmHeaderBadge();
 }
 
-// Update Alarm Badge in Top Header
 function updateAlarmHeaderBadge() {
   if (!headerAlarmBadgeEl) return;
   if (alarmSettings.enabled) {
@@ -311,19 +568,16 @@ function updateAlarmHeaderBadge() {
   }
 }
 
-// Helper: Check if client is fully completed
 function isClientCompleted(client) {
   if (!client.tasks || client.tasks.length === 0) return false;
   return client.tasks.every(t => t.checked);
 }
 
-// Helper: Count pending tasks for a client
 function getClientPendingCount(client) {
   if (!client.tasks) return 0;
   return client.tasks.filter(t => !t.checked).length;
 }
 
-// Get active client
 function getActiveClient() {
   let client = appData.clients.find(c => c.id === appData.activeClientId);
   if (!client && appData.clients.length > 0) {
@@ -333,7 +587,6 @@ function getActiveClient() {
   return client;
 }
 
-// Master Render
 function renderAll() {
   renderClientTabs();
   renderHeader();
@@ -341,7 +594,6 @@ function renderAll() {
   updateStats();
 }
 
-// Render Client Tabs with Search and "Hide Completed Clients" Filter
 function renderClientTabs() {
   clientTabsContainer.innerHTML = '';
   
@@ -413,7 +665,6 @@ function renderClientTabs() {
   });
 }
 
-// Render Header with Editable Client Name & Editable Year Tab
 function renderHeader() {
   const client = getActiveClient();
   if (!client) return;
@@ -428,7 +679,6 @@ function renderHeader() {
   }
 }
 
-// Update Client Name directly from input
 function updateCurrentClientName(newName) {
   const client = getActiveClient();
   if (!client) return;
@@ -440,7 +690,6 @@ function updateCurrentClientName(newName) {
   }
 }
 
-// Update Financial Year (Only the year portion typed by user in the beside tab)
 function updateCurrentClientYearOnly(newYear) {
   const client = getActiveClient();
   if (!client) return;
@@ -452,7 +701,6 @@ function updateCurrentClientYearOnly(newYear) {
   }
 }
 
-// Switch Client Filter Tab (Pending Only / Completed / All)
 function setClientStatusFilter(filter) {
   clientStatusFilter = filter;
   
@@ -471,7 +719,6 @@ function setClientStatusFilter(filter) {
   renderClientTabs();
 }
 
-// Render Tasks Table
 function renderTasksTable() {
   const client = getActiveClient();
   if (!client) {
@@ -620,7 +867,6 @@ function renderTasksTable() {
   });
 }
 
-// Update Statistics & Progress & Select-All Checkbox
 function updateStats() {
   const client = getActiveClient();
   const selectAllCheckbox = document.getElementById('select-all-checkbox');
@@ -649,7 +895,6 @@ function updateStats() {
   progressBarEl.style.width = `${percent}%`;
   progressPercentEl.textContent = `${percent}%`;
 
-  // Update Select All Checkbox state
   if (selectAllCheckbox) {
     if (completed === total && total > 0) {
       selectAllCheckbox.checked = true;
@@ -664,7 +909,6 @@ function updateStats() {
   }
 }
 
-// Master Select All / Deselect All
 function toggleSelectAllTasks(isChecked) {
   const client = getActiveClient();
   if (!client || !client.tasks) return;
@@ -677,7 +921,6 @@ function toggleSelectAllTasks(isChecked) {
   renderAll();
 }
 
-// Insert Task After a Specific Task (Plus Button)
 function insertTaskAfter(taskId) {
   const client = getActiveClient();
   if (!client) return;
@@ -711,7 +954,6 @@ function insertTaskAfter(taskId) {
   }, 60);
 }
 
-// Task CRUD Operations
 function addSingleTask(particulars = '', period = 'FY 2025-26', remark = '') {
   const client = getActiveClient();
   if (!client) return;
@@ -834,7 +1076,6 @@ function clearCompletedTasks() {
   }
 }
 
-// Client Management Operations
 function openAddClientModal() {
   const clientName = prompt('Enter Client / Entity Name:');
   if (!clientName || !clientName.trim()) return;
@@ -870,10 +1111,7 @@ function deleteCurrentClient() {
   }
 }
 
-// =========================================================================
-// ⏰ 11:00 AM DAILY REMINDER & ALARM SYSTEM
-// =========================================================================
-
+// Alarm Functions
 function playAlarmChime() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -921,7 +1159,7 @@ function playAlarmChime() {
     });
 
   } catch (err) {
-    console.warn('Audio playback error:', err);
+    console.warn('Audio error:', err);
   }
 }
 
@@ -1067,131 +1305,6 @@ function printWithPaperSize(paperSize = 'legal') {
   window.print();
 }
 
-// WhatsApp Integration
-function openWhatsAppModal() {
-  const client = getActiveClient();
-  if (!client) return;
-
-  const modal = document.getElementById('whatsapp-modal');
-  const previewBox = document.getElementById('wa-preview-text');
-  
-  if (modal && previewBox) {
-    updateWhatsAppPreview();
-    modal.classList.remove('hidden');
-  }
-}
-
-function closeWhatsAppModal() {
-  const modal = document.getElementById('whatsapp-modal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function setWhatsAppMode(mode) {
-  whatsappFilterMode = mode;
-  document.getElementById('wa-mode-pending').className = mode === 'pending' 
-    ? 'px-3 py-1.5 rounded-md bg-emerald-600 text-white font-bold text-xs shadow' 
-    : 'px-3 py-1.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold';
-    
-  document.getElementById('wa-mode-all').className = mode === 'all' 
-    ? 'px-3 py-1.5 rounded-md bg-emerald-600 text-white font-bold text-xs shadow' 
-    : 'px-3 py-1.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold';
-    
-  updateWhatsAppPreview();
-}
-
-function generateWhatsAppMessage() {
-  const client = getActiveClient();
-  if (!client) return '';
-
-  const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  
-  let text = `*M/S. ARYA ASSOCIATES*\n`;
-  text += `═══════════════════════════\n`;
-  text += `🏢 *Client:* ${client.name}\n`;
-  text += `📅 *Period:* ${client.fy || 'FINANCIAL YEAR 2025-26'}\n`;
-  text += `🗓️ *Date:* ${todayStr}\n`;
-  text += `═══════════════════════════\n\n`;
-
-  let tasksToInclude = client.tasks;
-  if (whatsappFilterMode === 'pending') {
-    tasksToInclude = client.tasks.filter(t => !t.checked);
-  }
-
-  if (tasksToInclude.length === 0) {
-    if (whatsappFilterMode === 'pending') {
-      text += `✅ *All audit requirements & documents have been received! No pending items.*\n\n`;
-    } else {
-      text += `_No items listed in checklist._\n\n`;
-    }
-  } else {
-    text += whatsappFilterMode === 'pending' 
-      ? `📋 *PENDING AUDIT REQUIREMENTS / DOCUMENTS:*\n\n`
-      : `📋 *AUDIT REQUIREMENTS STATUS:*\n\n`;
-
-    tasksToInclude.forEach((task, idx) => {
-      const statusIcon = task.checked ? `✅` : `⏳`;
-      text += `${idx + 1}. ${statusIcon} *${task.particulars}*\n`;
-      text += `   • *Period:* ${task.period || 'FY 2025-26'}\n`;
-      if (task.remark && task.remark.trim()) {
-        text += `   • _Remark:_ ${task.remark.trim()}\n`;
-      }
-      text += `\n`;
-    });
-
-    text += `───────────────────────────\n`;
-    text += `⚠️ *Note:* Kindly arrange to provide the above pending records/clarifications at the earliest for audit finalization.\n\n`;
-  }
-
-  text += `Thank you,\n`;
-  text += `*Audit Team*\n`;
-  text += `*M/S. ARYA ASSOCIATES*`;
-
-  return text;
-}
-
-function updateWhatsAppPreview() {
-  const previewBox = document.getElementById('wa-preview-text');
-  if (previewBox) {
-    previewBox.value = generateWhatsAppMessage();
-  }
-}
-
-function sendDirectWhatsApp() {
-  const phoneInput = document.getElementById('wa-phone-number');
-  const messageText = generateWhatsAppMessage();
-  
-  let phone = phoneInput ? phoneInput.value.replace(/[^0-9]/g, '') : '';
-  
-  if (phone.length === 10) {
-    phone = '91' + phone;
-  }
-
-  const encodedText = encodeURIComponent(messageText);
-
-  let waUrl = '';
-  if (phone) {
-    waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-  } else {
-    waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-  }
-
-  window.open(waUrl, '_blank');
-}
-
-function copyWhatsAppText() {
-  const messageText = generateWhatsAppMessage();
-  navigator.clipboard.writeText(messageText).then(() => {
-    const copyBtn = document.getElementById('wa-copy-btn');
-    if (copyBtn) {
-      const orig = copyBtn.innerHTML;
-      copyBtn.innerHTML = `✓ Copied!`;
-      setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
-    }
-  }).catch(err => {
-    alert('Failed to copy to clipboard.');
-  });
-}
-
 // Export to CSV / Excel
 function exportToExcel() {
   const client = getActiveClient();
@@ -1231,7 +1344,6 @@ function fullAppResetPrompt() {
 
   const confirm2 = prompt("To confirm full reset, please type 'RESET' in uppercase below:");
   if (confirm2 && confirm2.trim().toUpperCase() === 'RESET') {
-    // Fresh initial blank workspace
     appData = {
       activeClientId: 'client-1',
       clients: [
