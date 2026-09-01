@@ -958,24 +958,33 @@ function renderTasksTable() {
     const actualIndex = client.tasks.findIndex(t => t.id === task.id) + 1;
 
     tr.innerHTML = `
-      <!-- TICK BOX -->
-      <td class="px-2 py-2 text-center w-14">
-        <input 
-          type="checkbox" 
-          class="custom-checkbox" 
-          ${task.checked ? 'checked' : ''} 
-          title="Mark as Received / Completed"
-          onchange="toggleTaskStatus('${task.id}')"
-        />
+      <!-- TICK BOX & MOBILE TOP BAR -->
+      <td class="cell-tick-box px-2 py-2 text-center w-14">
+        <div class="flex items-center justify-between w-full md:justify-center">
+          <div class="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              class="custom-checkbox" 
+              ${task.checked ? 'checked' : ''} 
+              title="Mark as Received / Completed"
+              onchange="toggleTaskStatus('${task.id}')"
+            />
+            <span class="md:hidden font-black text-xs text-slate-700 bg-slate-200 px-2 py-0.5 rounded">#${actualIndex}</span>
+          </div>
+          <span class="md:hidden text-[11px] font-bold ${task.checked ? 'text-emerald-700' : 'text-amber-700'}">
+            ${task.checked ? '✓ COMPLETED' : '⏳ PENDING'}
+          </span>
+        </div>
       </td>
 
-      <!-- S. NO. (Left Aligned) -->
-      <td class="px-3 py-2 text-left font-bold text-slate-700 w-16" style="vertical-align: top; padding-top: 10px;">
+      <!-- S. NO. (Desktop) -->
+      <td class="cell-desktop-sno px-3 py-2 text-left font-bold text-slate-700 w-16" style="vertical-align: top; padding-top: 10px;">
         ${actualIndex}
       </td>
 
       <!-- PARTICULARS (Auto-expanding multi-line textarea with Keystroke Live Sync) -->
-      <td class="px-2 py-1.5" style="vertical-align: top;">
+      <td class="cell-particulars px-2 py-1.5" style="vertical-align: top;">
+        <div class="md:hidden text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">📌 Requirement / Document:</div>
         <textarea 
           rows="1"
           data-col="particulars"
@@ -987,7 +996,8 @@ function renderTasksTable() {
       </td>
 
       <!-- PERIOD (Keystroke Live Sync) -->
-      <td class="px-2 py-1.5" style="vertical-align: top;">
+      <td class="cell-period px-2 py-1.5" style="vertical-align: top;">
+        <div class="md:hidden text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">📅 Period:</div>
         <input 
           type="text" 
           data-col="period"
@@ -1000,7 +1010,8 @@ function renderTasksTable() {
       </td>
 
       <!-- REMARK (Auto-expanding multi-line textarea with Keystroke Live Sync) -->
-      <td class="px-2 py-1.5" style="vertical-align: top;">
+      <td class="cell-remark px-2 py-1.5" style="vertical-align: top;">
+        <div class="md:hidden text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">✍️ Remarks / Status:</div>
         <textarea 
           rows="1"
           data-col="remark"
@@ -1012,14 +1023,14 @@ function renderTasksTable() {
       </td>
 
       <!-- ACTIONS: [+] | [▲] | [▼] | [🗑️] (tabindex -1 so Tab key stays in table columns) -->
-      <td class="px-2 py-2 text-center w-28 no-print action-cell" style="vertical-align: top; padding-top: 8px;">
-        <div class="flex items-center justify-center gap-1">
+      <td class="cell-actions px-2 py-2 text-center w-28 no-print action-cell" style="vertical-align: top; padding-top: 8px;">
+        <div class="flex items-center justify-end md:justify-center gap-1.5">
           <button 
             tabindex="-1"
             onclick="insertTaskAfter('${task.id}', 'particulars')" 
             title="Add New Line Below (+)" 
-            class="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded font-black text-sm transition shadow-sm">
-            +
+            class="px-2.5 py-1 md:w-6 md:h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded font-black text-xs md:text-sm transition shadow-sm gap-1">
+            <span>+</span><span class="md:hidden text-[10px] font-bold">Add Row Below</span>
           </button>
           <button 
             tabindex="-1"
