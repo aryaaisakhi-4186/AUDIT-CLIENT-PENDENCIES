@@ -1874,5 +1874,73 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+// =========================================================================
+// 📲 1-CLICK PWA MOBILE & DESKTOP APP INSTALLATION ENGINE
+// =========================================================================
+
+let deferredInstallPrompt = null;
+
+function initPWAInstallation() {
+  // Register Service Worker for offline capability & mobile installability
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
+        .catch((err) => console.warn('PWA Service Worker notice:', err));
+    });
+  }
+
+  // Listen for native beforeinstallprompt event (Chrome, Android, Edge, Windows)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    // Show mobile floating install banner if on mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const banner = document.getElementById('mobile-install-banner');
+    if (banner && isMobile) {
+      setTimeout(() => banner.classList.remove('hidden'), 2000);
+    }
+  });
+
+  // Check if app is already running in standalone (installed) mode
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    const installBtn = document.getElementById('btn-install-pwa');
+    if (installBtn) installBtn.style.display = 'none';
+    const banner = document.getElementById('mobile-install-banner');
+    if (banner) banner.style.display = 'none';
+  }
+}
+
+// Triggered when user clicks "📲 Install App"
+async function triggerAppInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      dismissInstallBanner();
+      const installBtn = document.getElementById('btn-install-pwa');
+      if (installBtn) installBtn.style.display = 'none';
+    }
+    deferredInstallPrompt = null;
+  } else {
+    // If browser hasn't fired beforeinstallprompt or is on iPhone/Safari
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      alert("📲 To Install on iPhone / iPad:\n\n1. Tap the Share button (square with arrow ↑) at the bottom of Safari.\n2. Scroll down and tap 'Add to Home Screen' (➕).\n3. Tap 'Add' to install AUDIT-2026.");
+    } else {
+      alert("📲 To Install AUDIT-2026 App:\n\n1. Tap your browser menu (3 dots ⋮ at top right).\n2. Select 'Install App' or 'Add to Home screen' (📲).\n\nThe app icon will appear right on your home screen!");
+    }
+  }
+}
+
+function dismissInstallBanner() {
+  const banner = document.getElementById('mobile-install-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
 // Start app on DOMContentLoaded
-window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener('DOMContentLoaded', () => {
+  initApp();
+  initPWAInstallation();
+});
