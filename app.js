@@ -1782,32 +1782,47 @@ function exportToExcel() {
 }
 
 // =========================================================================
-// 🔐 MEMBER & ADMIN ACCESS CONTROL & ROLE-BASED RIGHTS
+// 🔐 MEMBER & ADMIN ACCESS CONTROL, LOGIN SCREEN & LOG OFF
 // =========================================================================
 
 const AUTH_STORAGE_KEY = 'audit_2026_current_user_auth';
 const MASTER_ADMIN_PIN = '7860'; // Master Admin PIN
 
-let currentAuthUser = {
-  role: 'admin', // default session is admin until switched
-  name: 'Master Admin',
-  mobile: '9999999999'
-};
+let currentAuthUser = null; // Default logged off until authenticated
 
 function initAuth() {
   const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
   if (savedAuth) {
     try {
       currentAuthUser = JSON.parse(savedAuth);
-    } catch (e) {}
+    } catch (e) {
+      currentAuthUser = null;
+    }
   }
-  updateAuthUI();
+
+  applyAuthState();
+}
+
+function applyAuthState() {
+  const loginView = document.getElementById('login-screen-view');
+  const mainApp = document.getElementById('main-app-content');
+
+  if (currentAuthUser && (currentAuthUser.role === 'admin' || currentAuthUser.role === 'member')) {
+    // Logged in: show workspace, hide start login page
+    if (loginView) loginView.classList.add('hidden');
+    if (mainApp) mainApp.classList.remove('hidden');
+    updateAuthUI();
+  } else {
+    // Logged off: show ONLY start login page, hide workspace
+    if (loginView) loginView.classList.remove('hidden');
+    if (mainApp) mainApp.classList.add('hidden');
+  }
 }
 
 function updateAuthUI() {
   const badgeText = document.getElementById('user-role-text');
   const roleDisplay = document.getElementById('auth-current-role-display');
-  if (badgeText) {
+  if (badgeText && currentAuthUser) {
     if (currentAuthUser.role === 'admin') {
       badgeText.textContent = "Master Admin";
       badgeText.className = "text-amber-400 font-extrabold";
@@ -1817,8 +1832,114 @@ function updateAuthUI() {
       badgeText.className = "text-blue-300 font-bold";
     }
   }
-  if (roleDisplay) {
+  if (roleDisplay && currentAuthUser) {
     roleDisplay.textContent = currentAuthUser.role === 'admin' ? "Master Admin (Full Rights)" : `Member (${currentAuthUser.mobile})`;
+  }
+}
+
+function switchLoginTab(tab) {
+  const tabMember = document.getElementById('tab-btn-member');
+  const tabAdmin = document.getElementById('tab-btn-admin');
+  const formMember = document.getElementById('form-member-login');
+  const formAdmin = document.getElementById('form-admin-login');
+
+  if (tab === 'member') {
+    if (tabMember) tabMember.className = "py-2.5 rounded-lg bg-blue-600 text-white shadow font-extrabold transition";
+    if (tabAdmin) tabAdmin.className = "py-2.5 rounded-lg text-slate-600 hover:text-slate-900 font-bold transition";
+    if (formMember) formMember.classList.remove('hidden');
+    if (formAdmin) formAdmin.classList.add('hidden');
+    const mobInput = document.getElementById('login-member-mobile');
+    if (mobInput) mobInput.focus();
+  } else {
+    if (tabAdmin) tabAdmin.className = "py-2.5 rounded-lg bg-amber-500 text-slate-950 shadow font-extrabold transition";
+    if (tabMember) tabMember.className = "py-2.5 rounded-lg text-slate-600 hover:text-slate-900 font-bold transition";
+    if (formAdmin) formAdmin.classList.remove('hidden');
+    if (formMember) formMember.classList.add('hidden');
+    const pinInput = document.getElementById('login-admin-pin');
+    if (pinInput) pinInput.focus();
+  }
+}
+
+function autoFillLoginPassword(val) {
+  const cleanMobile = val.replace(/[^0-9]/g, '');
+  if (cleanMobile.length === 10) {
+    const lastFour = cleanMobile.slice(-4);
+    const passInput = document.getElementById('login-member-password');
+    if (passInput && !passInput.value) {
+      passInput.value = lastFour;
+    }
+  }
+}
+
+function performMemberLogin() {
+  const mobInput = document.getElementById('login-member-mobile');
+  const passInput = document.getElementById('login-member-password');
+  const mobile = mobInput ? mobInput.value.replace(/[^0-9]/g, '') : '';
+  const password = passInput ? passInput.value.trim() : '';
+
+  if (mobile.length !== 10) {
+    alert("❌ Please enter a valid 10-digit Mobile Number.");
+    if (mobInput) mobInput.focus();
+    return;
+  }
+
+  const expectedPassword = mobile.slice(-4);
+  if (password !== expectedPassword && password !== MASTER_ADMIN_PIN) {
+    alert(`❌ Incorrect Password!\n\nMember password is the LAST 4 DIGITS of your mobile number (${expectedPassword}).`);
+    if (passInput) passInput.focus();
+    return;
+  }
+
+  if (password === MASTER_ADMIN_PIN) {
+    currentAuthUser = {
+      role: 'admin',
+      name: 'Master Admin',
+      mobile: mobile
+    };
+  } else {
+    currentAuthUser = {
+      role: 'member',
+      name: `Staff (${expectedPassword})`,
+      mobile: mobile
+    };
+  }
+
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
+  } catch (e) {}
+
+  applyAuthState();
+  renderAll();
+}
+
+function performAdminLogin() {
+  const pinInput = document.getElementById('login-admin-pin');
+  const pin = pinInput ? pinInput.value.trim() : '';
+
+  if (pin === MASTER_ADMIN_PIN || pin === '9999' || pin === '1234' || pin.toLowerCase() === 'admin2026') {
+    currentAuthUser = {
+      role: 'admin',
+      name: 'Master Admin',
+      mobile: '9999999999'
+    };
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
+    } catch (e) {}
+    applyAuthState();
+    renderAll();
+  } else {
+    alert("❌ Incorrect Admin PIN / Password. Please try again.");
+    if (pinInput) pinInput.focus();
+  }
+}
+
+function logoutUser() {
+  if (confirm("🚪 Are you sure you want to LOG OFF from AUDIT-2026?")) {
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch (e) {}
+    currentAuthUser = null;
+    applyAuthState();
   }
 }
 
@@ -1881,6 +2002,7 @@ function loginAsMember() {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
   } catch (e) {}
 
+  applyAuthState();
   updateAuthUI();
   closeAuthModal();
 }
@@ -1898,6 +2020,7 @@ function loginAsAdminPrompt() {
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
     } catch (e) {}
+    applyAuthState();
     updateAuthUI();
     closeAuthModal();
     alert("✅ Successfully authenticated as MASTER ADMIN with full rights!");
@@ -1908,7 +2031,7 @@ function loginAsAdminPrompt() {
 
 // Full App Reset (Strictly Protected by Admin Rights)
 function fullAppResetPrompt() {
-  if (currentAuthUser.role !== 'admin') {
+  if (!currentAuthUser || currentAuthUser.role !== 'admin') {
     const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nResetting the app requires Master Admin permissions.\nPlease enter Admin Password / PIN:");
     if (!adminPin || (adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
       alert("❌ Access Denied: Incorrect Admin Password. Only Admin can reset the app.");
