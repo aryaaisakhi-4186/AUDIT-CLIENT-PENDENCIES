@@ -409,47 +409,85 @@
   <!-- Main Content Container (100% Full Width Edge-to-Edge) -->
   <main class="w-full px-2 sm:px-3 py-3 flex-1 main-container">
 
-    <!-- KPI Summary Bar (Screen only - Full Width) -->
+    <!-- KPI Summary Bar (Clickable Filter & Interactive Report Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4 no-print stats-banner w-full">
-      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      
+      <!-- 1. Total Requirements Card -->
+      <div 
+        id="card-kpi-total"
+        onclick="filterByKpi('all')" 
+        title="Click to View ALL Audit Requirements"
+        class="bg-white p-3.5 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group">
         <div>
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Requirements</p>
-          <p class="text-2xl font-black text-slate-800 mt-0.5" id="total-count">0</p>
+          <div class="flex items-center gap-1.5">
+            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Requirements</p>
+            <span class="text-[10px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition">👁️ View All</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900 mt-0.5" id="total-count">0</p>
+          <p class="text-[10px] text-slate-400 font-semibold" id="kpi-total-subtext">Click to view all list</p>
         </div>
-        <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition shadow-inner">
           📋
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
+      <!-- 2. Pending Tasks Card -->
+      <div 
+        id="card-kpi-pending"
+        onclick="filterByKpi('pending')" 
+        title="Click to View PENDING Requirements Only"
+        class="bg-white p-3.5 rounded-2xl border-2 border-red-200 shadow-sm hover:shadow-md hover:border-red-500 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group">
         <div>
-          <p class="text-xs font-medium text-red-600 uppercase tracking-wider">Pending Tasks</p>
+          <div class="flex items-center gap-1.5">
+            <p class="text-[11px] font-bold text-red-600 uppercase tracking-wider">Pending Tasks</p>
+            <span class="text-[10px] text-red-600 font-bold opacity-0 group-hover:opacity-100 transition">👁️ View Pending</span>
+          </div>
           <p class="text-2xl font-black text-red-600 mt-0.5" id="pending-count">0</p>
+          <p class="text-[10px] text-red-400 font-semibold" id="kpi-pending-subtext">Click to show pending only</p>
         </div>
-        <div class="w-9 h-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold">
+        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition shadow-inner">
           ⏳
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-between">
+      <!-- 3. Received / Done Card -->
+      <div 
+        id="card-kpi-completed"
+        onclick="filterByKpi('completed')" 
+        title="Click to View RECEIVED / DONE Requirements Only"
+        class="bg-white p-3.5 rounded-2xl border-2 border-emerald-200 shadow-sm hover:shadow-md hover:border-emerald-500 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group">
         <div>
-          <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Received / Done</p>
+          <div class="flex items-center gap-1.5">
+            <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Received / Done</p>
+            <span class="text-[10px] text-emerald-700 font-bold opacity-0 group-hover:opacity-100 transition">👁️ View Done</span>
+          </div>
           <p class="text-2xl font-black text-emerald-600 mt-0.5" id="completed-count">0</p>
+          <p class="text-[10px] text-emerald-500 font-semibold" id="kpi-completed-subtext">Click to show completed</p>
         </div>
-        <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition shadow-inner">
           ✅
         </div>
       </div>
 
-      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <!-- 4. Audit Progress Card -->
+      <div 
+        id="card-kpi-progress"
+        onclick="openAuditProgressReportModal()" 
+        title="Click to Open Executive Audit Progress & Compliance Report"
+        class="bg-gradient-to-br from-white to-blue-50/50 p-3.5 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-md hover:border-blue-600 flex flex-col justify-between cursor-pointer transition-all transform active:scale-95 group">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Audit Progress</p>
-          <span class="text-xs font-bold text-blue-600" id="progress-percent">0%</span>
+          <div class="flex items-center gap-1.5">
+            <p class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Audit Progress</p>
+            <span class="text-[10px] text-blue-700 font-extrabold bg-blue-100 px-1.5 py-0.5 rounded-md group-hover:bg-blue-600 group-hover:text-white transition">📊 Report</span>
+          </div>
+          <span class="text-xs font-black text-blue-700" id="progress-percent">0%</span>
         </div>
-        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200 mt-1.5">
-          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200 mt-2">
+          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full transition-all duration-300 shadow-sm" style="width: 0%"></div>
         </div>
+        <p class="text-[10px] text-slate-400 font-semibold mt-1">Click to open full audit report & analytics</p>
       </div>
+
     </div>
 
     <!-- Paper Document Card (Full Screen Fluid) -->
@@ -1189,6 +1227,136 @@
           onclick="closeUserMasterModal()" 
           class="px-5 py-2 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer">
           Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 📊 AUDIT PROGRESS & EXECUTIVE REPORT MODAL                     -->
+  <!-- ============================================================== -->
+  <div id="audit-progress-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4 hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 px-6 py-4 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-xl shadow">
+            📊
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base leading-tight text-white">Audit Progress & Pendency Report</h3>
+            <p class="text-xs text-blue-200" id="report-modal-client-subtitle">M/S. ARYA ASSOCIATES &bull; Audit & Client Pendency Summary</p>
+          </div>
+        </div>
+        <button onclick="closeAuditProgressReportModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+      </div>
+
+      <!-- Report Body -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+        
+        <!-- Top Stats Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Requirements</p>
+            <p class="text-3xl font-black text-slate-900 mt-1" id="report-stat-total">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-red-200 shadow-sm text-center">
+            <p class="text-[10px] font-bold text-red-600 uppercase tracking-wider">Pending Documents</p>
+            <p class="text-3xl font-black text-red-600 mt-1" id="report-stat-pending">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-emerald-200 shadow-sm text-center">
+            <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Received / Done</p>
+            <p class="text-3xl font-black text-emerald-600 mt-1" id="report-stat-completed">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-blue-200 shadow-sm text-center">
+            <p class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Audit Progress</p>
+            <p class="text-3xl font-black text-blue-600 mt-1" id="report-stat-percent">0%</p>
+          </div>
+        </div>
+
+        <!-- Progress Bar Visual -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+            <span>Audit Completion Status:</span>
+            <span id="report-progress-label" class="text-blue-700 font-extrabold">In Progress</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200">
+            <div id="report-progress-bar" class="bg-gradient-to-r from-blue-600 to-emerald-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Pending Items Drill-Down Table -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-wider text-red-700 flex items-center gap-1.5">
+              <span>⏳</span> Pending Requirements Breakdown
+            </h4>
+            <span id="report-pending-items-count" class="text-[11px] font-bold text-slate-500">0 items pending</span>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div class="overflow-x-auto max-h-60">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-700 font-black uppercase tracking-wider border-b border-slate-200 sticky top-0">
+                  <tr>
+                    <th class="px-3.5 py-2.5 w-12 text-center">#</th>
+                    <th class="px-3.5 py-2.5">Audit Requirement</th>
+                    <th class="px-3.5 py-2.5 w-36">Period</th>
+                    <th class="px-3.5 py-2.5">Remarks / Follow-up</th>
+                  </tr>
+                </thead>
+                <tbody id="report-pending-table-body" class="divide-y divide-slate-100 font-medium text-slate-800">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Clients Firm Overview Card -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <span>🏢</span> Firm-Wide Clients Overview (All Entities)
+          </h4>
+          <div class="grid grid-cols-3 gap-2 text-center pt-1">
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="text-[10px] text-slate-500 font-bold uppercase">Total Clients</p>
+              <p class="text-lg font-black text-slate-900" id="report-firm-total-clients">0</p>
+            </div>
+            <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
+              <p class="text-[10px] text-amber-700 font-bold uppercase">Pending Audit</p>
+              <p class="text-lg font-black text-amber-700" id="report-firm-pending-clients">0</p>
+            </div>
+            <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+              <p class="text-[10px] text-emerald-700 font-bold uppercase">100% Completed</p>
+              <p class="text-lg font-black text-emerald-700" id="report-firm-completed-clients">0</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Action Buttons -->
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2 shrink-0">
+        <div class="flex items-center gap-2">
+          <button 
+            onclick="openWhatsAppModal(); closeAuditProgressReportModal();" 
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer">
+            <span>📱</span> Send WhatsApp PDF
+          </button>
+          <button 
+            onclick="downloadLetterheadPDF()" 
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer">
+            <span>📥</span> Download PDF
+          </button>
+        </div>
+
+        <button 
+          onclick="closeAuditProgressReportModal()" 
+          class="px-5 py-2 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer">
+          Close Report
         </button>
       </div>
 

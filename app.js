@@ -1195,6 +1195,7 @@ function updateStats() {
       selectAllCheckbox.checked = false;
       selectAllCheckbox.indeterminate = false;
     }
+    updateKpiCardHighlight();
     return;
   }
 
@@ -1221,6 +1222,143 @@ function updateStats() {
       selectAllCheckbox.indeterminate = false;
     }
   }
+
+  updateKpiCardHighlight();
+}
+
+function updateKpiCardHighlight() {
+  const cardTotal = document.getElementById('card-kpi-total');
+  const cardPending = document.getElementById('card-kpi-pending');
+  const cardCompleted = document.getElementById('card-kpi-completed');
+  const subTotal = document.getElementById('kpi-total-subtext');
+  const subPending = document.getElementById('kpi-pending-subtext');
+  const subCompleted = document.getElementById('kpi-completed-subtext');
+
+  if (!cardTotal || !cardPending || !cardCompleted) return;
+
+  // Reset default styling
+  cardTotal.className = "bg-white p-3.5 rounded-2xl border-2 border-slate-200 shadow-sm hover:shadow-md flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+  cardPending.className = "bg-white p-3.5 rounded-2xl border-2 border-red-200 shadow-sm hover:shadow-md flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+  cardCompleted.className = "bg-white p-3.5 rounded-2xl border-2 border-emerald-200 shadow-sm hover:shadow-md flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+
+  if (subTotal) subTotal.textContent = "Click to view all list";
+  if (subPending) subPending.textContent = "Click to show pending only";
+  if (subCompleted) subCompleted.textContent = "Click to show completed";
+
+  if (currentFilter === 'all') {
+    cardTotal.className = "bg-blue-50/90 p-3.5 rounded-2xl border-2 border-blue-600 shadow-md ring-2 ring-blue-400/40 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+    if (subTotal) subTotal.textContent = "✓ Currently Viewing All Tasks";
+  } else if (currentFilter === 'pending') {
+    cardPending.className = "bg-red-50/90 p-3.5 rounded-2xl border-2 border-red-600 shadow-md ring-2 ring-red-400/40 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+    if (subPending) subPending.textContent = "✓ Currently Viewing Pending Only";
+  } else if (currentFilter === 'completed') {
+    cardCompleted.className = "bg-emerald-50/90 p-3.5 rounded-2xl border-2 border-emerald-600 shadow-md ring-2 ring-emerald-400/40 flex items-center justify-between cursor-pointer transition-all transform active:scale-95 group";
+    if (subCompleted) subCompleted.textContent = "✓ Currently Viewing Done Only";
+  }
+}
+
+function filterByKpi(type) {
+  if (type === 'all' || type === 'pending' || type === 'completed') {
+    currentFilter = type;
+    renderTasksTable();
+    updateKpiCardHighlight();
+  }
+}
+
+// 📊 Audit Progress & Executive Report Modal
+function openAuditProgressReportModal() {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const total = client.tasks ? client.tasks.length : 0;
+  const completed = client.tasks ? client.tasks.filter(t => t.checked).length : 0;
+  const pending = total - completed;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  // Set Subtitle
+  const subtitleEl = document.getElementById('report-modal-client-subtitle');
+  if (subtitleEl) {
+    subtitleEl.textContent = `Client: ${client.name} • ${client.fy || 'FY 2025-26'}`;
+  }
+
+  // Set stats
+  const statTotal = document.getElementById('report-stat-total');
+  const statPending = document.getElementById('report-stat-pending');
+  const statCompleted = document.getElementById('report-stat-completed');
+  const statPercent = document.getElementById('report-stat-percent');
+  const progBar = document.getElementById('report-progress-bar');
+  const progLabel = document.getElementById('report-progress-label');
+
+  if (statTotal) statTotal.textContent = total;
+  if (statPending) statPending.textContent = pending;
+  if (statCompleted) statCompleted.textContent = completed;
+  if (statPercent) statPercent.textContent = `${percent}%`;
+  if (progBar) progBar.style.width = `${percent}%`;
+
+  if (progLabel) {
+    if (percent === 100) {
+      progLabel.textContent = "🎉 100% Audit Requirements Complete!";
+      progLabel.className = "text-emerald-700 font-extrabold";
+    } else {
+      progLabel.textContent = `${percent}% Completed (${pending} Pending Items)`;
+      progLabel.className = "text-blue-700 font-extrabold";
+    }
+  }
+
+  // Populate Pending Items Table
+  const pendingTbody = document.getElementById('report-pending-table-body');
+  const pendingCountLabel = document.getElementById('report-pending-items-count');
+  const pendingTasks = client.tasks ? client.tasks.filter(t => !t.checked) : [];
+
+  if (pendingCountLabel) {
+    pendingCountLabel.textContent = `${pendingTasks.length} pending document(s)`;
+  }
+
+  if (pendingTbody) {
+    pendingTbody.innerHTML = '';
+    if (pendingTasks.length === 0) {
+      pendingTbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="px-4 py-8 text-center text-emerald-700 font-bold bg-emerald-50/50">
+            🎉 All audit requirements have been received and verified for this client!
+          </td>
+        </tr>
+      `;
+    } else {
+      pendingTasks.forEach((task, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-red-50/30 transition";
+        tr.innerHTML = `
+          <td class="px-3.5 py-2.5 text-center font-bold text-slate-500">${index + 1}</td>
+          <td class="px-3.5 py-2.5 font-bold text-slate-900">${escapeHtml(task.particulars || 'Requirement')}</td>
+          <td class="px-3.5 py-2.5 text-slate-700 font-semibold">${escapeHtml(task.period || '-')}</td>
+          <td class="px-3.5 py-2.5 text-red-700 font-medium">${escapeHtml(task.remark || 'Pending from client')}</td>
+        `;
+        pendingTbody.appendChild(tr);
+      });
+    }
+  }
+
+  // Firm Overview
+  const totalClients = appData.clients ? appData.clients.length : 0;
+  const completedClients = appData.clients ? appData.clients.filter(c => isClientCompleted(c)).length : 0;
+  const pendingClients = totalClients - completedClients;
+
+  const firmTotal = document.getElementById('report-firm-total-clients');
+  const firmPending = document.getElementById('report-firm-pending-clients');
+  const firmCompleted = document.getElementById('report-firm-completed-clients');
+
+  if (firmTotal) firmTotal.textContent = totalClients;
+  if (firmPending) firmPending.textContent = pendingClients;
+  if (firmCompleted) firmCompleted.textContent = completedClients;
+
+  const modal = document.getElementById('audit-progress-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAuditProgressReportModal() {
+  const modal = document.getElementById('audit-progress-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 // Master Select All / Deselect All
