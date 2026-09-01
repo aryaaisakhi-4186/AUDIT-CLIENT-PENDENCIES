@@ -250,6 +250,21 @@ function loadData() {
     console.error('Error loading data from storage:', err);
     appData = { ...DEFAULT_DATA };
   }
+
+  // Guarantee Admin & Members Master presence
+  if (!appData.adminMaster) {
+    appData.adminMaster = {
+      name: 'CA DEEPAK ARYA',
+      mobile: '9999999999',
+      pin: '7860'
+    };
+  }
+  if (!Array.isArray(appData.membersMaster)) {
+    appData.membersMaster = [
+      { id: 'mem-1', name: 'Rahul Sharma', mobile: '9876543210', role: 'Audit Assistant' },
+      { id: 'mem-2', name: 'Pooja Verma', mobile: '9812345678', role: 'Senior Auditor' }
+    ];
+  }
 }
 
 const CLIENT_SESSION_ID = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
@@ -1814,26 +1829,23 @@ function applyAuthState() {
     updateAuthUI();
   } else {
     // Logged off: show ONLY start login page, hide workspace
-    if (loginView) loginView.classList.remove('hidden');
-    if (mainApp) mainApp.classList.add('hidden');
-  }
-}
-
-function updateAuthUI() {
+   function updateAuthUI() {
   const badgeText = document.getElementById('user-role-text');
   const roleDisplay = document.getElementById('auth-current-role-display');
   if (badgeText && currentAuthUser) {
     if (currentAuthUser.role === 'admin') {
-      badgeText.textContent = "Master Admin";
+      badgeText.textContent = (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin";
       badgeText.className = "text-amber-400 font-extrabold";
     } else {
-      const lastFour = currentAuthUser.mobile ? currentAuthUser.mobile.slice(-4) : 'Staff';
-      badgeText.textContent = `Staff (${lastFour})`;
+      const displayName = currentAuthUser.name || `Staff (${currentAuthUser.mobile.slice(-4)})`;
+      badgeText.textContent = displayName;
       badgeText.className = "text-blue-300 font-bold";
     }
   }
   if (roleDisplay && currentAuthUser) {
-    roleDisplay.textContent = currentAuthUser.role === 'admin' ? "Master Admin (Full Rights)" : `Member (${currentAuthUser.mobile})`;
+    roleDisplay.textContent = currentAuthUser.role === 'admin' 
+      ? `${(appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : "Master Admin"} (Full Rights)` 
+      : `${currentAuthUser.name || 'Member'} (${currentAuthUser.mobile})`;
   }
 }
 
@@ -1876,6 +1888,7 @@ function performMemberLogin() {
   const passInput = document.getElementById('login-member-password');
   const mobile = mobInput ? mobInput.value.replace(/[^0-9]/g, '') : '';
   const password = passInput ? passInput.value.trim() : '';
+  const adminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
 
   if (mobile.length !== 10) {
     alert("❌ Please enter a valid 10-digit Mobile Number.");
@@ -1884,23 +1897,30 @@ function performMemberLogin() {
   }
 
   const expectedPassword = mobile.slice(-4);
-  if (password !== expectedPassword && password !== MASTER_ADMIN_PIN) {
+  if (password !== expectedPassword && password !== adminPin && password !== MASTER_ADMIN_PIN) {
     alert(`❌ Incorrect Password!\n\nMember password is the LAST 4 DIGITS of your mobile number (${expectedPassword}).`);
     if (passInput) passInput.focus();
     return;
   }
 
-  if (password === MASTER_ADMIN_PIN) {
+  // Check if member is in registered Master directory
+  let registeredMember = null;
+  if (Array.isArray(appData.membersMaster)) {
+    registeredMember = appData.membersMaster.find(m => m.mobile === mobile);
+  }
+
+  if (password === adminPin || password === MASTER_ADMIN_PIN) {
     currentAuthUser = {
       role: 'admin',
-      name: 'Master Admin',
+      name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
       mobile: mobile
     };
   } else {
     currentAuthUser = {
       role: 'member',
-      name: `Staff (${expectedPassword})`,
-      mobile: mobile
+      name: registeredMember ? registeredMember.name : `Staff (${expectedPassword})`,
+      mobile: mobile,
+      designation: registeredMember ? registeredMember.role : 'Staff Member'
     };
   }
 
@@ -1915,12 +1935,13 @@ function performMemberLogin() {
 function performAdminLogin() {
   const pinInput = document.getElementById('login-admin-pin');
   const pin = pinInput ? pinInput.value.trim() : '';
+  const adminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
 
-  if (pin === MASTER_ADMIN_PIN || pin === '9999' || pin === '1234' || pin.toLowerCase() === 'admin2026') {
+  if (pin === adminPin || pin === MASTER_ADMIN_PIN || pin === '9999' || pin === '1234' || pin.toLowerCase() === 'admin2026') {
     currentAuthUser = {
       role: 'admin',
-      name: 'Master Admin',
-      mobile: '9999999999'
+      name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
+      mobile: (appData.adminMaster && appData.adminMaster.mobile) ? appData.adminMaster.mobile : '9999999999'
     };
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
@@ -1941,6 +1962,287 @@ function logoutUser() {
     currentAuthUser = null;
     applyAuthState();
   }
+}
+
+// =========================================================================
+// 👥 STAFF / MEMBERS & ADMIN MASTER SETUP & MANAGEMENT
+// =========================================================================
+
+function openUserMasterModal() {
+  const masterPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
+
+  // If not logged in as Admin, require Admin PIN
+  if (!currentAuthUser || currentAuthUser.role !== 'admin') {
+    const adminPin = prompt("🔒 ADMIN RIGHTS REQUIRED:\n\nManaging User Master requires Master Admin rights. Enter Admin PIN:");
+    if (!adminPin || (adminPin.trim() !== masterPin && adminPin.trim() !== MASTER_ADMIN_PIN && adminPin.trim() !== '9999' && adminPin.trim() !== '1234' && adminPin.trim().toLowerCase() !== 'admin2026')) {
+      alert("❌ Access Denied: Incorrect Admin Password.");
+      return;
+    }
+  }
+
+  // Populate Admin settings inputs
+  const adminNameInput = document.getElementById('master-admin-name');
+  const adminMobileInput = document.getElementById('master-admin-mobile');
+  const adminPinInput = document.getElementById('master-admin-pin');
+
+  if (appData.adminMaster) {
+    if (adminNameInput) adminNameInput.value = appData.adminMaster.name || 'CA DEEPAK ARYA';
+    if (adminMobileInput) adminMobileInput.value = appData.adminMaster.mobile || '9999999999';
+    if (adminPinInput) adminPinInput.value = appData.adminMaster.pin || '7860';
+  }
+
+  resetMemberForm();
+  renderMembersMasterList();
+
+  const modal = document.getElementById('user-master-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeUserMasterModal() {
+  const modal = document.getElementById('user-master-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function switchUserMasterTab(tab) {
+  const btnMembers = document.getElementById('btn-master-tab-members');
+  const btnAdmin = document.getElementById('btn-master-tab-admin');
+  const viewMembers = document.getElementById('master-view-members');
+  const viewAdmin = document.getElementById('master-view-admin');
+
+  if (tab === 'members') {
+    if (btnMembers) btnMembers.className = "px-4 py-2.5 rounded-t-xl font-black text-xs border-t border-l border-r border-slate-200 bg-white text-blue-600 shadow-sm flex items-center gap-2";
+    if (btnAdmin) btnAdmin.className = "px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5";
+    if (viewMembers) viewMembers.classList.remove('hidden');
+    if (viewAdmin) viewAdmin.classList.add('hidden');
+  } else {
+    if (btnAdmin) btnAdmin.className = "px-4 py-2.5 rounded-t-xl font-black text-xs border-t border-l border-r border-slate-200 bg-white text-amber-600 shadow-sm flex items-center gap-2";
+    if (btnMembers) btnMembers.className = "px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5";
+    if (viewAdmin) viewAdmin.classList.remove('hidden');
+    if (viewMembers) viewMembers.classList.add('hidden');
+  }
+}
+
+function updateMemberPassPreview(val) {
+  const cleanMobile = val.replace(/[^0-9]/g, '');
+  const preview = document.getElementById('master-member-pass-preview');
+  if (preview) {
+    if (cleanMobile.length === 10) {
+      preview.textContent = cleanMobile.slice(-4);
+      preview.className = "px-2.5 py-1 bg-emerald-50 border border-emerald-300 text-emerald-700 rounded-lg font-mono font-black text-xs shadow-sm";
+    } else {
+      preview.textContent = "Last 4 Digits";
+      preview.className = "px-2.5 py-1 bg-white border border-blue-300 text-blue-700 rounded-lg font-mono font-black text-xs shadow-sm";
+    }
+  }
+}
+
+function renderMembersMasterList() {
+  const tbody = document.getElementById('master-members-table-body');
+  const countBadge = document.getElementById('master-members-count-badge');
+  if (!tbody) return;
+
+  if (!Array.isArray(appData.membersMaster)) {
+    appData.membersMaster = [];
+  }
+
+  if (countBadge) {
+    countBadge.textContent = appData.membersMaster.length;
+  }
+
+  tbody.innerHTML = '';
+
+  if (appData.membersMaster.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-4 py-6 text-center text-slate-400 italic">
+          No staff members added yet. Use the form above to add your team members.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  appData.membersMaster.forEach((mem, index) => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-blue-50/40 transition";
+    const lastFour = mem.mobile ? mem.mobile.slice(-4) : '----';
+
+    tr.innerHTML = `
+      <td class="px-3.5 py-3 text-center font-bold text-slate-500">${index + 1}</td>
+      <td class="px-3.5 py-3 font-bold text-slate-900">${escapeHtml(mem.name)}</td>
+      <td class="px-3.5 py-3 font-mono font-bold text-slate-700">${escapeHtml(mem.mobile)}</td>
+      <td class="px-3.5 py-3">
+        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-mono font-black text-xs border border-emerald-300">
+          🔑 ${lastFour}
+        </span>
+      </td>
+      <td class="px-3.5 py-3 text-slate-600 font-semibold">${escapeHtml(mem.role || 'Staff Member')}</td>
+      <td class="px-3.5 py-3 text-center">
+        <div class="flex items-center justify-center gap-1.5">
+          <button 
+            onclick="editMemberMasterEntry('${mem.id}')" 
+            title="Edit Member"
+            class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition font-bold text-xs cursor-pointer">
+            ✏️
+          </button>
+          <button 
+            onclick="deleteMemberMasterEntry('${mem.id}')" 
+            title="Delete Member"
+            class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition font-bold text-xs cursor-pointer">
+            🗑️
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function saveMemberMasterEntry() {
+  const nameInput = document.getElementById('master-member-name');
+  const mobileInput = document.getElementById('master-member-mobile');
+  const roleInput = document.getElementById('master-member-role');
+  const editIdInput = document.getElementById('member-edit-id');
+
+  const name = nameInput ? nameInput.value.trim() : '';
+  const mobile = mobileInput ? mobileInput.value.replace(/[^0-9]/g, '') : '';
+  const role = roleInput ? roleInput.value.trim() : 'Staff Member';
+  const editId = editIdInput ? editIdInput.value.trim() : '';
+
+  if (!name) {
+    alert("❌ Please enter Staff Full Name.");
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  if (mobile.length !== 10) {
+    alert("❌ Please enter a valid 10-digit Mobile Number.");
+    if (mobileInput) mobileInput.focus();
+    return;
+  }
+
+  if (!Array.isArray(appData.membersMaster)) {
+    appData.membersMaster = [];
+  }
+
+  if (editId) {
+    const existing = appData.membersMaster.find(m => m.id === editId);
+    if (existing) {
+      existing.name = name;
+      existing.mobile = mobile;
+      existing.role = role;
+    }
+  } else {
+    const duplicate = appData.membersMaster.find(m => m.mobile === mobile);
+    if (duplicate) {
+      alert(`⚠️ A staff member with mobile number ${mobile} already exists (${duplicate.name}).`);
+      return;
+    }
+
+    appData.membersMaster.push({
+      id: 'mem-' + Date.now(),
+      name: name,
+      mobile: mobile,
+      role: role
+    });
+  }
+
+  saveData();
+  renderMembersMasterList();
+  resetMemberForm();
+  alert("✅ Staff Member saved and synced to Google Cloud!");
+}
+
+function editMemberMasterEntry(id) {
+  const mem = appData.membersMaster.find(m => m.id === id);
+  if (!mem) return;
+
+  const nameInput = document.getElementById('master-member-name');
+  const mobileInput = document.getElementById('master-member-mobile');
+  const roleInput = document.getElementById('master-member-role');
+  const editIdInput = document.getElementById('member-edit-id');
+  const formTitle = document.getElementById('member-form-title');
+  const cancelBtn = document.getElementById('btn-cancel-member-edit');
+  const saveBtn = document.getElementById('btn-save-member');
+
+  if (nameInput) nameInput.value = mem.name;
+  if (mobileInput) {
+    mobileInput.value = mem.mobile;
+    updateMemberPassPreview(mem.mobile);
+  }
+  if (roleInput) roleInput.value = mem.role || '';
+  if (editIdInput) editIdInput.value = mem.id;
+
+  if (formTitle) formTitle.innerHTML = `<span>✏️</span> Edit Staff Member: ${escapeHtml(mem.name)}`;
+  if (cancelBtn) cancelBtn.classList.remove('hidden');
+  if (saveBtn) saveBtn.innerHTML = `<span>✓ Update Member</span>`;
+  if (nameInput) nameInput.focus();
+}
+
+function resetMemberForm() {
+  const nameInput = document.getElementById('master-member-name');
+  const mobileInput = document.getElementById('master-member-mobile');
+  const roleInput = document.getElementById('master-member-role');
+  const editIdInput = document.getElementById('member-edit-id');
+  const formTitle = document.getElementById('member-form-title');
+  const cancelBtn = document.getElementById('btn-cancel-member-edit');
+  const saveBtn = document.getElementById('btn-save-member');
+
+  if (nameInput) nameInput.value = '';
+  if (mobileInput) {
+    mobileInput.value = '';
+    updateMemberPassPreview('');
+  }
+  if (roleInput) roleInput.value = '';
+  if (editIdInput) editIdInput.value = '';
+
+  if (formTitle) formTitle.innerHTML = `<span>➕</span> Add New Staff / Team Member`;
+  if (cancelBtn) cancelBtn.classList.add('hidden');
+  if (saveBtn) saveBtn.innerHTML = `<span>✓ Save Member</span>`;
+}
+
+function deleteMemberMasterEntry(id) {
+  const mem = appData.membersMaster.find(m => m.id === id);
+  if (!mem) return;
+
+  if (confirm(`Are you sure you want to remove "${mem.name}" (${mem.mobile}) from staff directory?`)) {
+    appData.membersMaster = appData.membersMaster.filter(m => m.id !== id);
+    saveData();
+    renderMembersMasterList();
+  }
+}
+
+function saveAdminMasterSettings() {
+  const nameInput = document.getElementById('master-admin-name');
+  const mobileInput = document.getElementById('master-admin-mobile');
+  const pinInput = document.getElementById('master-admin-pin');
+
+  const name = nameInput ? nameInput.value.trim() : 'CA DEEPAK ARYA';
+  const mobile = mobileInput ? mobileInput.value.replace(/[^0-9]/g, '') : '9999999999';
+  const pin = pinInput ? pinInput.value.trim() : '7860';
+
+  if (!pin) {
+    alert("❌ Admin PIN cannot be empty.");
+    return;
+  }
+
+  appData.adminMaster = {
+    name: name || 'CA DEEPAK ARYA',
+    mobile: mobile || '9999999999',
+    pin: pin
+  };
+
+  if (currentAuthUser && currentAuthUser.role === 'admin') {
+    currentAuthUser.name = appData.adminMaster.name;
+    currentAuthUser.mobile = appData.adminMaster.mobile;
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
+    } catch (e) {}
+    updateAuthUI();
+  }
+
+  saveData();
+  alert("✅ Master Admin credentials updated and synced to Google Cloud!");
 }
 
 function openAuthModal() {
@@ -1970,6 +2272,7 @@ function loginAsMember() {
   const passInput = document.getElementById('auth-password-input');
   const mobile = mobileInput ? mobileInput.value.replace(/[^0-9]/g, '') : '';
   const password = passInput ? passInput.value.trim() : '';
+  const adminPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
 
   if (mobile.length !== 10) {
     alert("❌ Please enter a valid 10-digit Mobile Number.");
@@ -1977,25 +2280,31 @@ function loginAsMember() {
   }
 
   const expectedPassword = mobile.slice(-4);
-  if (password !== expectedPassword && password !== MASTER_ADMIN_PIN) {
+  if (password !== expectedPassword && password !== adminPin && password !== MASTER_ADMIN_PIN) {
     alert(`❌ Incorrect Password!\n\nMember password must be the LAST 4 DIGITS of your mobile number (${expectedPassword}).`);
     return;
   }
 
-  if (password === MASTER_ADMIN_PIN) {
+  let registeredMember = null;
+  if (Array.isArray(appData.membersMaster)) {
+    registeredMember = appData.membersMaster.find(m => m.mobile === mobile);
+  }
+
+  if (password === adminPin || password === MASTER_ADMIN_PIN) {
     currentAuthUser = {
       role: 'admin',
-      name: 'Master Admin',
+      name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
       mobile: mobile
     };
     alert("✅ Logged in as MASTER ADMIN!");
   } else {
     currentAuthUser = {
       role: 'member',
-      name: `Member (${expectedPassword})`,
-      mobile: mobile
+      name: registeredMember ? registeredMember.name : `Staff (${expectedPassword})`,
+      mobile: mobile,
+      designation: registeredMember ? registeredMember.role : 'Staff Member'
     };
-    alert(`✅ Welcome! Logged in as Staff / Member (${mobile}).`);
+    alert(`✅ Welcome! Logged in as Staff (${registeredMember ? registeredMember.name : mobile}).`);
   }
 
   try {
@@ -2008,14 +2317,15 @@ function loginAsMember() {
 }
 
 function loginAsAdminPrompt() {
-  const pin = prompt("🔐 Enter Master Admin Password / PIN (e.g. 7860):");
+  const masterPin = (appData.adminMaster && appData.adminMaster.pin) ? appData.adminMaster.pin : MASTER_ADMIN_PIN;
+  const pin = prompt(`🔐 Enter Master Admin Password / PIN (Default: ${masterPin}):`);
   if (!pin) return;
 
-  if (pin.trim() === MASTER_ADMIN_PIN || pin.trim() === '9999' || pin.trim() === '1234' || pin.trim().toLowerCase() === 'admin2026') {
+  if (pin.trim() === masterPin || pin.trim() === MASTER_ADMIN_PIN || pin.trim() === '9999' || pin.trim() === '1234' || pin.trim().toLowerCase() === 'admin2026') {
     currentAuthUser = {
       role: 'admin',
-      name: 'Master Admin',
-      mobile: '9999999999'
+      name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
+      mobile: (appData.adminMaster && appData.adminMaster.mobile) ? appData.adminMaster.mobile : '9999999999'
     };
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));

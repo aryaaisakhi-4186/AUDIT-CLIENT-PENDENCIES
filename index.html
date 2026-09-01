@@ -275,6 +275,16 @@
             <span id="user-role-text">Master Admin</span>
           </button>
 
+          <!-- 👥 Admin & Member Master Button -->
+          <button 
+            id="btn-user-master"
+            onclick="openUserMasterModal()" 
+            title="Admin & Member Master Directory (Setup Name, Mobile & Password)"
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-extrabold rounded-md text-xs border border-blue-400/50 shadow transition cursor-pointer">
+            <span>👥</span>
+            <span>User Master</span>
+          </button>
+
           <!-- 🚪 Log Off Button -->
           <button 
             onclick="logoutUser()" 
@@ -975,11 +985,211 @@
           </button>
         </div>
 
-        <div class="border-t border-slate-200 pt-3 flex items-center justify-between text-xs">
-          <span class="text-slate-500 font-medium">Logged in as: <strong id="auth-current-role-display" class="text-emerald-700 font-bold">Admin</strong></span>
-          <button onclick="loginAsAdminPrompt()" class="text-amber-600 hover:text-amber-800 font-bold underline">Login as Master Admin</button>
+  <!-- ============================================================== -->
+  <!-- 👥 ADMIN & MEMBER / STAFF MASTER MODAL                         -->
+  <!-- ============================================================== -->
+  <div id="user-master-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4 hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-4 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-xl shadow">
+            👥
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base leading-tight text-white">Staff & Admin Master Setup</h3>
+            <p class="text-xs text-blue-200">Manage Staff Mobile Numbers, Passwords & Master Admin Credentials</p>
+          </div>
         </div>
+        <button onclick="closeUserMasterModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
       </div>
+
+      <!-- Tab Switcher -->
+      <div class="flex items-center border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-2 shrink-0">
+        <button 
+          id="btn-master-tab-members"
+          onclick="switchUserMasterTab('members')"
+          class="px-4 py-2.5 rounded-t-xl font-black text-xs border-t border-l border-r border-slate-200 bg-white text-blue-600 shadow-sm flex items-center gap-2">
+          <span>📱 Staff / Members Directory</span>
+          <span id="master-members-count-badge" class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-[10px] font-extrabold">0</span>
+        </button>
+        <button 
+          id="btn-master-tab-admin"
+          onclick="switchUserMasterTab('admin')"
+          class="px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+          <span>👑 Master Admin Settings</span>
+        </button>
+      </div>
+
+      <!-- Tab Contents (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+
+        <!-- TAB 1: MEMBERS DIRECTORY -->
+        <div id="master-view-members" class="space-y-5">
+          
+          <!-- Add / Edit Member Form Card -->
+          <div class="bg-gradient-to-br from-blue-50/70 to-indigo-50/70 border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 id="member-form-title" class="text-xs font-black uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                <span>➕</span> Add New Staff / Team Member
+              </h4>
+              <button 
+                id="btn-cancel-member-edit" 
+                onclick="resetMemberForm()" 
+                class="hidden text-[11px] text-red-600 hover:text-red-800 font-bold underline">
+                Cancel Edit
+              </button>
+            </div>
+
+            <input type="hidden" id="member-edit-id" value="">
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Staff Full Name</label>
+                <input 
+                  type="text" 
+                  id="master-member-name" 
+                  placeholder="e.g. Rahul Sharma" 
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mobile Number</label>
+                <input 
+                  type="tel" 
+                  id="master-member-mobile" 
+                  placeholder="10-digit mobile" 
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                  oninput="updateMemberPassPreview(this.value)"
+                />
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Role / Designation</label>
+                <input 
+                  type="text" 
+                  id="master-member-role" 
+                  placeholder="e.g. Audit Associate" 
+                  class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-blue-200/50">
+              <div class="text-xs text-blue-900 font-bold flex items-center gap-1.5">
+                <span>🔑 Auto Login Password:</span>
+                <span id="master-member-pass-preview" class="px-2.5 py-1 bg-white border border-blue-300 text-blue-700 rounded-lg font-mono font-black text-xs shadow-sm">Last 4 Digits</span>
+              </div>
+
+              <button 
+                type="button"
+                id="btn-save-member"
+                onclick="saveMemberMasterEntry()" 
+                class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                <span>✓ Save Member</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Members List Table -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black uppercase tracking-wider text-slate-700">Registered Staff Directory</h4>
+              <span class="text-[11px] text-slate-500">Auto-synced across devices via Firebase</span>
+            </div>
+
+            <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-100 text-slate-700 font-black uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th class="px-3.5 py-2.5 w-12 text-center">#</th>
+                      <th class="px-3.5 py-2.5">Staff Name</th>
+                      <th class="px-3.5 py-2.5">Mobile Number</th>
+                      <th class="px-3.5 py-2.5">Login Password</th>
+                      <th class="px-3.5 py-2.5">Designation</th>
+                      <th class="px-3.5 py-2.5 text-center w-24">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="master-members-table-body" class="divide-y divide-slate-100 font-medium text-slate-800">
+                    <!-- Dynamic rows injected by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: MASTER ADMIN SETTINGS -->
+        <div id="master-view-admin" class="space-y-4 hidden">
+          <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">👑</span>
+              <div>
+                <h4 class="text-sm font-black text-slate-900">Master Admin Profile & Security PIN</h4>
+                <p class="text-xs text-amber-900">Admin has full permissions including App Reset, Member Management & Client Deletion.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Admin Name</label>
+                <input 
+                  type="text" 
+                  id="master-admin-name" 
+                  value="CA DEEPAK ARYA" 
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Admin Mobile Number</label>
+                <input 
+                  type="tel" 
+                  id="master-admin-mobile" 
+                  value="9999999999" 
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Master Admin PIN / Password</label>
+                <input 
+                  type="text" 
+                  id="master-admin-pin" 
+                  value="7860" 
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm"
+                />
+                <p class="text-[11px] text-slate-500 mt-1">This PIN is required for Master Admin Login, Resetting the App, and Deleting Clients.</p>
+              </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+              <button 
+                type="button" 
+                onclick="saveAdminMasterSettings()" 
+                class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-md transition cursor-pointer">
+                💾 Save Admin Credentials
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between shrink-0">
+        <p class="text-[11px] text-slate-500 font-medium">All changes sync automatically to Google Firebase Cloud.</p>
+        <button 
+          onclick="closeUserMasterModal()" 
+          class="px-5 py-2 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer">
+          Close
+        </button>
+      </div>
+
     </div>
   </div>
 
