@@ -109,22 +109,24 @@ html, body {
   background-color: #f8fafc;
 }
 
-/* 🟢 VIVID DARK GREEN HIGHLIGHT FOR COMPLETED (TICKED) TASKS */
+/* 🟢 PLEASANT LIGHT GREEN HIGHLIGHT WITH THICK STRIKETHROUGH */
 .row-completed td {
-  background-color: #166534 !important; /* Rich Dark Green */
-  border-color: #14532d !important;
+  background-color: #dcfce7 !important; /* Soft Pleasant Light Green */
+  border-color: #86efac !important;
 }
 
 .row-completed .table-input,
 .row-completed .table-textarea {
-  color: #ffffff !important; /* Bright White Text on Dark Green */
+  color: #14532d !important; /* Dark Green Text */
   font-weight: 700 !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  text-decoration: line-through !important;
+  text-decoration-thickness: 2.5px !important; /* Thicker Strikethrough Line */
+  text-decoration-color: #15803d !important;
 }
 
 .row-completed td span,
 .row-completed td {
-  color: #ffffff !important;
+  color: #14532d !important;
   font-weight: 800 !important;
 }
 
