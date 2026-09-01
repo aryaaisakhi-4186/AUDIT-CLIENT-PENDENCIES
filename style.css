@@ -7,7 +7,7 @@
   --accent-gold: #b45309;
   --accent-gold-light: #fef3c7;
   --accent-blue: #2563eb;
-  --accent-green: #16a34a;
+  --accent-green: #166534;
   --border-color: #cbd5e1;
   --bg-page: #f1f5f9;
 }
@@ -79,7 +79,7 @@ html, body {
 .audit-table {
   width: 100% !important;
   border-collapse: collapse !important;
-  table-layout: fixed !important; /* Fixed layout locks column widths */
+  table-layout: fixed !important; /* Strictly locks column widths */
 }
 
 .audit-table th {
@@ -99,121 +99,130 @@ html, body {
 
 .audit-table td {
   border: 1px solid #cbd5e1;
-  vertical-align: middle;
+  vertical-align: top;
   overflow: visible;
   padding: 4px 6px;
+  word-break: break-word;
 }
 
 .audit-table tr:hover td {
   background-color: #f8fafc;
 }
 
-/* 🟢 DARK GREEN HIGHLIGHT FOR COMPLETED TASKS */
+/* 🟢 VIVID DARK GREEN HIGHLIGHT FOR COMPLETED (TICKED) TASKS */
 .row-completed td {
-  background-color: #bbf7d0 !important; /* Rich Green (emerald-200) */
-  border-color: #86efac !important;
+  background-color: #166534 !important; /* Rich Dark Green */
+  border-color: #14532d !important;
 }
 
 .row-completed .table-input,
 .row-completed .table-textarea {
-  color: #064e3b !important; /* Dark bold green text */
+  color: #ffffff !important; /* Bright White Text on Dark Green */
   font-weight: 700 !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
-/* Draggable Column Resizer Handle */
+.row-completed td span,
+.row-completed td {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+/* ↔️ Prominent Draggable Column Resizer Divider Line */
 .col-resizer {
-  position: absolute;
-  top: 0;
-  right: -4px;
-  width: 8px !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: -5px !important;
+  width: 14px !important; /* Wide, easy to grab area */
   height: 100% !important;
   cursor: col-resize !important;
   user-select: none !important;
-  z-index: 30 !important;
-  background: transparent;
-  touch-action: none;
+  z-index: 100 !important;
+  background: transparent !important;
+  touch-action: none !important;
 }
 
 .col-resizer::after {
-  content: '';
-  position: absolute;
-  right: 3px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background-color: #94a3b8;
-  opacity: 0.4;
-  transition: all 0.15s ease;
+  content: '' !important;
+  position: absolute !important;
+  right: 5px !important;
+  top: 2px !important;
+  bottom: 2px !important;
+  width: 3px !important;
+  background-color: #3b82f6 !important;
+  border-radius: 2px !important;
+  opacity: 0.8 !important;
 }
 
 .col-resizer:hover::after,
 .col-resizer.is-resizing::after {
-  background-color: #2563eb !important;
-  width: 3px !important;
+  background-color: #1d4ed8 !important;
+  width: 5px !important;
   opacity: 1 !important;
 }
 
 /* Custom Checkbox */
 .custom-checkbox {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.3rem;
+  height: 1.3rem;
   cursor: pointer;
   accent-color: #16a34a;
 }
 
-/* Inline Edit Auto-Wrapping Textarea (No Text Overlapping) */
+/* Inline Edit Auto-Expanding Multi-Line Textarea (No Text Overlapping) */
 .table-textarea {
-  width: 100%;
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  resize: none;
-  overflow: hidden;
-  display: block;
-  box-sizing: border-box;
-  color: inherit;
+  width: 100% !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  padding: 6px 8px !important;
+  border-radius: 4px !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  line-height: 1.45 !important;
+  resize: none !important;
+  overflow: hidden !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  color: inherit !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
   transition: border-color 0.15s ease, background-color 0.15s ease;
-  word-break: break-word;
-  white-space: pre-wrap;
 }
 
 .table-textarea:hover {
-  border-color: #cbd5e1;
-  background-color: #ffffff;
+  border-color: #cbd5e1 !important;
+  background-color: #ffffff !important;
 }
 
 .table-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
 }
 
 .table-input {
-  width: 100%;
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 6px 8px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-  color: inherit;
-  font-size: 0.875rem;
+  width: 100% !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  padding: 6px 8px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+  color: inherit !important;
+  font-size: 0.875rem !important;
+  line-height: 1.45 !important;
 }
 
 .table-input:hover {
-  border-color: #cbd5e1;
-  background-color: #ffffff;
+  border-color: #cbd5e1 !important;
+  background-color: #ffffff !important;
 }
 
 .table-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
 }
 
 /* Modal styles */
@@ -249,7 +258,7 @@ html, body {
 }
 
 /* ========================================================= */
-/* PRINT STYLING - A4 & LEGAL (0.75" BOTTOM MARGIN)          */
+/* PRINT STYLING - A4 & LEGAL (0.75" / 19.05mm BOTTOM MARGIN)*/
 /* ========================================================= */
 
 @page {
