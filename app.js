@@ -1375,6 +1375,52 @@ function clearCompletedTasks() {
   }
 }
 
+// ⚡ Fast / Common Task Entry Engine
+function handleQuickPresetSelect(value) {
+  if (!value) return;
+  const client = getActiveClient();
+  const rawFY = client && client.fy ? client.fy : 'FINANCIAL YEAR 2025-26';
+  const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
+
+  const partInput = document.getElementById('quick-entry-particulars');
+  const periodInput = document.getElementById('quick-entry-period');
+  if (partInput) partInput.value = value;
+  if (periodInput && !periodInput.value) periodInput.value = `FY ${cleanYear}`;
+  if (partInput) partInput.focus();
+}
+
+function submitQuickTaskEntry() {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const partInput = document.getElementById('quick-entry-particulars');
+  const periodInput = document.getElementById('quick-entry-period');
+  const remarkInput = document.getElementById('quick-entry-remark');
+  const presetSelect = document.getElementById('quick-preset-select');
+
+  const particulars = partInput ? partInput.value.trim() : '';
+  if (!particulars) {
+    if (partInput) partInput.focus();
+    return;
+  }
+
+  const rawFY = client.fy || 'FINANCIAL YEAR 2025-26';
+  const cleanYear = rawFY.replace(/^FINANCIAL\s+YEAR\s*:?\s*/i, '').trim() || '2025-26';
+  const period = periodInput && periodInput.value.trim() ? periodInput.value.trim() : `FY ${cleanYear}`;
+  const remark = remarkInput ? remarkInput.value.trim() : '';
+
+  // Add new task to active client
+  addSingleTask(particulars, period, remark);
+
+  // Clear fast entry form for next entry immediately
+  if (partInput) {
+    partInput.value = '';
+    partInput.focus();
+  }
+  if (remarkInput) remarkInput.value = '';
+  if (presetSelect) presetSelect.value = '';
+}
+
 function openAddClientModal() {
   const clientName = prompt('Enter Client / Entity Name:');
   if (!clientName || !clientName.trim()) return;

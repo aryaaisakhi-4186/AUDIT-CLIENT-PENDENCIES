@@ -388,6 +388,80 @@
         </div>
       </div>
 
+      <!-- ⚡ COMMON TASK ENTRY TAB / BAR (Direct Fast Entry) -->
+      <div class="px-3 py-2.5 bg-blue-50/70 border-b border-blue-200 flex flex-wrap items-center gap-2.5 no-print w-full">
+        <div class="flex items-center gap-1.5 text-blue-900 font-extrabold text-xs shrink-0">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black shadow-sm">+</span>
+          <span class="uppercase tracking-wider">Fast Task Entry:</span>
+        </div>
+
+        <!-- Common Task Suggestions Dropdown -->
+        <div class="shrink-0">
+          <select 
+            id="quick-preset-select" 
+            class="bg-white border border-blue-300 text-slate-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer shadow-sm"
+            onchange="handleQuickPresetSelect(this.value)">
+            <option value="">⚡ Common Tasks Suggestions...</option>
+            <option value="Bank Statement & Bank Reconciliation Statement">Bank Statement & BRS</option>
+            <option value="GSTR-1, GSTR-3B & GSTR-9/9C Filed Returns">GSTR-1, 3B & 9 Returns</option>
+            <option value="GSTR-2B vs Books Purchase Reconciliation">GSTR-2B Purchase Reconcil.</option>
+            <option value="Fixed Assets Register & Depreciation Chart">Fixed Assets & Deprec. Chart</option>
+            <option value="Sundry Debtors Ledger Balance Confirmations">Debtors Balance Confirmations</option>
+            <option value="Sundry Creditors Ledger Balance Confirmations">Creditors Balance Confirmations</option>
+            <option value="Year-end Stock / Inventory Valuation Sheet">Stock / Inventory Valuation</option>
+            <option value="TDS & TCS Challans and 26Q/27Q Returns">TDS/TCS Challans & 26Q</option>
+            <option value="Loan Statements & Sanction Letters">Loan Statements & Sanctions</option>
+            <option value="Statutory Dues Challans (PF, ESIC, PT)">Statutory Dues (PF, ESIC, PT)</option>
+            <option value="Directors / Partners Remuneration Details">Remuneration & Minutes</option>
+            <option value="Interest on MSME Vendors Details">Interest on MSME Vendors</option>
+          </select>
+        </div>
+
+        <!-- Particulars Input -->
+        <div class="flex-1 min-w-[220px]">
+          <input 
+            type="text" 
+            id="quick-entry-particulars" 
+            placeholder="Type requirement name (e.g. Bank Statement, GST Returns)..." 
+            class="w-full px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitQuickTaskEntry();}"
+          />
+        </div>
+
+        <!-- Period Input -->
+        <div class="w-36 shrink-0">
+          <input 
+            type="text" 
+            id="quick-entry-period" 
+            placeholder="Period (e.g. FY 2025-26)" 
+            class="w-full px-2.5 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitQuickTaskEntry();}"
+          />
+        </div>
+
+        <!-- Remark Input -->
+        <div class="flex-1 min-w-[160px]">
+          <input 
+            type="text" 
+            id="quick-entry-remark" 
+            placeholder="Remark / Status (optional)..." 
+            class="w-full px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitQuickTaskEntry();}"
+          />
+        </div>
+
+        <!-- Add to List Button -->
+        <button 
+          type="button" 
+          onclick="submitQuickTaskEntry()" 
+          class="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          + Add to List
+        </button>
+      </div>
+
       <!-- ============================================================== -->
       <!-- TABLE FORMAT (100% Full Width & ↔️ Resizable Columns): TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
       <!-- ============================================================== -->
