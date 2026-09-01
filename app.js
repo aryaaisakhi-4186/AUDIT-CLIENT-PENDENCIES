@@ -594,6 +594,7 @@ function renderAll() {
   updateStats();
 }
 
+// Render Client Tabs with Search and "Hide Completed Clients" Filter
 function renderClientTabs() {
   clientTabsContainer.innerHTML = '';
   
@@ -605,11 +606,14 @@ function renderClientTabs() {
   let visibleClients = appData.clients.filter(client => {
     const completed = isClientCompleted(client);
 
-    if (clientStatusFilter === 'pending' && completed) {
-      return false;
-    }
-    if (clientStatusFilter === 'completed' && !completed) {
-      return false;
+    // Keep the currently active client visible so tab does not jump away when marked completed
+    if (client.id !== appData.activeClientId) {
+      if (clientStatusFilter === 'pending' && completed) {
+        return false;
+      }
+      if (clientStatusFilter === 'completed' && !completed) {
+        return false;
+      }
     }
 
     if (clientSearchQuery.trim()) {
@@ -627,13 +631,6 @@ function renderClientTabs() {
       </div>
     `;
     return;
-  }
-
-  const isCurrentVisible = visibleClients.some(c => c.id === appData.activeClientId);
-  if (!isCurrentVisible && visibleClients.length > 0) {
-    appData.activeClientId = visibleClients[0].id;
-    renderHeader();
-    renderTasksTable();
   }
 
   visibleClients.forEach(client => {
@@ -909,12 +906,24 @@ function updateStats() {
   }
 }
 
-function toggleSelectAllTasks(isChecked) {
+// Master Select All / Deselect All
+function toggleSelectAllTasks(forcedState) {
   const client = getActiveClient();
-  if (!client || !client.tasks) return;
+  if (!client || !client.tasks || client.tasks.length === 0) return;
+
+  // Determine target state:
+  // If not all tasks are checked, clicking Select All should mark ALL as checked (true)
+  // If ALL tasks are already checked, clicking Select All should unmark ALL (false)
+  let targetState;
+  if (typeof forcedState === 'boolean') {
+    targetState = forcedState;
+  } else {
+    const allAlreadyChecked = client.tasks.every(t => t.checked);
+    targetState = !allAlreadyChecked;
+  }
 
   client.tasks.forEach(task => {
-    task.checked = isChecked;
+    task.checked = targetState;
   });
 
   saveData();
