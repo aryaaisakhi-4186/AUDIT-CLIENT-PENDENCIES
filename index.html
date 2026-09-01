@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AUDIT-2026 | Client Pendencies Tracker - M/S. ARYA ASSOCIATES</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0f172a',
+              gold: '#b45309',
+              blue: '#2563eb'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-slate-100/90 text-slate-800 antialiased flex flex-col">
+
+  <!-- ============================================================== -->
+  <!-- ⏰ 11:00 AM ALARM TRIGGERED NOTIFICATION BANNER (When Ringing) -->
+  <!-- ============================================================== -->
+  <div id="alarm-trigger-banner" class="hidden bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white px-4 py-3 shadow-xl z-50 sticky top-0 border-b-2 border-amber-300 animate-pulse no-print">
+    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl alarm-ringing">🔔</span>
+        <div>
+          <h2 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+            ⏰ 11:00 AM DAILY AUDIT PENDENCY REMINDER!
+          </h2>
+          <p class="text-xs text-amber-100 font-medium">
+            You have <strong id="alarm-pending-client-count" class="underline font-black text-white text-sm">0</strong> client(s) with pending audit documents today.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="stopRingingAlarm()" 
+          class="px-4 py-1.5 bg-white text-slate-900 font-black text-xs rounded-lg shadow-lg hover:bg-slate-100 transition">
+          🔕 Stop Alarm / Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top App Navigation (Screen only) -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md no-print top-navbar sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center font-bold text-slate-950 text-xl shadow">
+          A
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            AUDIT-2026 <span class="text-xs bg-blue-600/80 text-blue-100 font-medium px-2 py-0.5 rounded">v1.3</span>
+          </h1>
+          <p class="text-xs text-slate-400">M/S. ARYA ASSOCIATES &bull; Audit & Client Pendency Manager</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 flex-wrap">
+        
+        <!-- ⏰ 11:00 AM Alarm Setting Badge -->
+        <button 
+          id="header-alarm-badge"
+          onclick="openAlarmModal()" 
+          title="Daily 11:00 AM Alarm Settings"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-md text-xs shadow transition cursor-pointer">
+          ⏰ 11:00 AM Reminder
+        </button>
+
+        <!-- Standard Checklist -->
+        <button 
+          onclick="loadStandardChecklist()" 
+          title="Add 10 Standard Statutory Audit Points"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-semibold shadow transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          + Checklist
+        </button>
+
+        <!-- Direct WhatsApp Message Button -->
+        <button 
+          onclick="openWhatsAppModal()" 
+          title="Send pendency list on WhatsApp (Normal WhatsApp)"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow transition animate-pulse hover:animate-none">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          WhatsApp
+        </button>
+
+        <!-- Legal Print Button -->
+        <button 
+          onclick="printWithPaperSize('legal')" 
+          title="Print on LEGAL Paper (8.5 x 14 inch)"
+          class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold shadow transition">
+          📄 Legal
+        </button>
+
+        <!-- A4 Print Button -->
+        <button 
+          onclick="printWithPaperSize('a4')" 
+          title="Print on A4 Paper"
+          class="flex items-center gap-1 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-xs font-medium shadow transition">
+          A4
+        </button>
+
+        <!-- Export Excel -->
+        <button 
+          onclick="exportToExcel()" 
+          title="Export current client to Excel CSV"
+          class="flex items-center gap-1 px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-medium transition">
+          📊 Excel
+        </button>
+
+        <!-- Backup options -->
+        <div class="h-5 w-px bg-slate-700 mx-0.5"></div>
+        
+        <button 
+          onclick="backupAllData()" 
+          title="Download full backup file"
+          class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- CLIENT MANAGEMENT, SEARCH & TABS BAR (Screen only)            -->
+  <!-- ============================================================== -->
+  <div class="bg-slate-200/95 border-b border-slate-300 px-4 sm:px-6 lg:px-8 py-2.5 no-print tabs-bar shadow-inner">
+    <div class="max-w-7xl mx-auto space-y-2">
+      
+      <!-- Top Row: Client Search & Filter Status (Pending only vs Completed vs All) -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        
+        <div class="flex items-center gap-2 flex-1 max-w-lg">
+          <!-- Client Search Input -->
+          <div class="relative w-full">
+            <input 
+              type="text" 
+              id="client-search-input" 
+              placeholder="🔍 Search Client Name..." 
+              class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+            />
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+
+          <!-- Client Status Filter (Hide Completed clients by default) -->
+          <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-slate-100 text-xs flex-shrink-0 shadow-sm">
+            <button 
+              id="client-filter-pending" 
+              onclick="setClientStatusFilter('pending')" 
+              title="Show only clients with pending requirements (Completed clients are hidden)"
+              class="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-bold text-xs shadow flex items-center gap-1">
+              ⏳ Pending (<span id="pending-clients-badge">0</span>)
+            </button>
+            <button 
+              id="client-filter-completed" 
+              onclick="setClientStatusFilter('completed')" 
+              title="Show clients whose all requirements are done"
+              class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold">
+              ✅ Done
+            </button>
+            <button 
+              id="client-filter-all" 
+              onclick="setClientStatusFilter('all')" 
+              title="Show all clients list"
+              class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold">
+              📁 All
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Client & Manage Buttons -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button 
+            onclick="openAddClientModal()" 
+            class="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            + Add Client Tab
+          </button>
+
+          <button 
+            onclick="deleteCurrentClient()" 
+            title="Delete Current Client Tab"
+            class="px-2 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold shadow-sm transition">
+            🗑️ Delete Tab
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Bottom Row: Horizontal Client Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto tabs-scroll-container pb-1 pt-0.5" id="client-tabs">
+        <!-- Client Tabs Injected by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 main-container">
+
+    <!-- KPI Summary Bar (Screen only) -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 no-print stats-banner">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Requirements</p>
+          <p class="text-2xl font-black text-slate-800 mt-1" id="total-count">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          📋
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-red-600 uppercase tracking-wider">Pending Tasks</p>
+          <p class="text-2xl font-black text-red-600 mt-1" id="pending-count">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold">
+          ⏳
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Received / Done</p>
+          <p class="text-2xl font-black text-emerald-600 mt-1" id="completed-count">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+          ✅
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Audit Progress</p>
+          <span class="text-xs font-bold text-blue-600" id="progress-percent">0%</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200 mt-2">
+          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paper Document Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+
+      <!-- ============================================================== -->
+      <!-- REQUIRED LETTERHEAD HEADER FORMAT (Exact requirement from user) -->
+      <!-- ============================================================== -->
+      <div class="letterhead-box bg-slate-50 border-b border-slate-300 px-6 sm:px-10 py-7 text-center">
+        
+        <!-- 1st Line: M/S. ARYA ASSOCIATES -->
+        <h2 class="letterhead-title text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-wider uppercase mb-3">
+          M/S. ARYA ASSOCIATES
+        </h2>
+        
+        <div class="w-24 h-0.5 bg-amber-500 mx-auto mb-3"></div>
+
+        <!-- 2nd Line: CLIENT NAME (Bold, Badi Size & Direct Editable) -->
+        <div class="max-w-2xl mx-auto mb-2">
+          <input 
+            type="text" 
+            id="client-name-input" 
+            value="[CLIENT NAME]" 
+            title="Click to edit Client Name directly"
+            placeholder="ENTER CLIENT NAME"
+            class="client-name-title text-2xl sm:text-4xl font-black text-slate-950 tracking-tight uppercase text-center w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-none transition py-1 rounded"
+            onchange="updateCurrentClientName(this.value)"
+          />
+        </div>
+
+        <!-- 3rd Line: Fixed "FINANCIAL YEAR" label with editable Year Tab right beside it -->
+        <div class="inline-flex items-center bg-slate-900 border border-slate-700 rounded-full px-4 py-1.5 shadow-sm text-sm sm:text-base font-bold text-amber-400 gap-2">
+          <!-- Fixed Label -->
+          <span class="tracking-wide uppercase select-none text-white/90 text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+            📅 FINANCIAL YEAR
+          </span>
+          <span class="text-amber-400/60 font-bold">:</span>
+          <!-- Editable Year Tab -->
+          <input 
+            type="text" 
+            id="fy-year-input" 
+            value="2025-26" 
+            placeholder="2025-26"
+            title="Type Financial Year here (e.g. 2025-26, 2024-25)"
+            class="bg-slate-800 text-amber-400 font-black px-3 py-0.5 rounded-full border border-amber-500/50 text-center w-28 sm:w-32 focus:bg-slate-950 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition cursor-text text-sm sm:text-base tracking-wider"
+            onchange="updateCurrentClientYearOnly(this.value)"
+          />
+        </div>
+        <p class="text-xs font-medium text-slate-500 mt-2">AUDIT REQUIREMENTS & CLIENT PENDENCY CHECKLIST</p>
+      </div>
+
+      <!-- Action & Filter Toolbar (Screen only) -->
+      <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
+        <!-- Search -->
+        <div class="relative flex-1 min-w-[220px] max-w-md">
+          <input 
+            type="text" 
+            id="search-tasks" 
+            placeholder="Search requirement, period, or remarks..." 
+            class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+
+        <!-- Filters & Row Controls -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Filter Buttons -->
+          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs font-semibold">
+            <button data-filter="all" class="px-3 py-1 rounded-md bg-blue-600 text-white shadow transition">All</button>
+            <button data-filter="pending" class="px-3 py-1 rounded-md bg-white text-slate-600 hover:text-slate-900 transition">Pending</button>
+            <button data-filter="completed" class="px-3 py-1 rounded-md bg-white text-slate-600 hover:text-slate-900 transition">Received</button>
+          </div>
+
+          <!-- Add Row Button -->
+          <button 
+            onclick="addSingleTask()" 
+            class="flex items-center gap-1 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            + Add Row
+          </button>
+
+          <!-- Clear Completed -->
+          <button 
+            onclick="clearCompletedTasks()" 
+            title="Remove completed items"
+            class="px-2.5 py-1.5 text-xs text-slate-600 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 rounded-lg transition">
+            Clear Done
+          </button>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TABLE FORMAT: TICK BOX | S. No. | PARTICULARS | PERIOD | REMARK -->
+      <!-- ============================================================== -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse audit-table text-sm">
+          <thead>
+            <tr>
+              <th class="py-2.5 px-3 text-center w-14 border-r border-slate-300">
+                <div class="flex flex-col items-center justify-center gap-0.5" title="Select All / Deselect All">
+                  <input 
+                    type="checkbox" 
+                    id="select-all-checkbox" 
+                    class="custom-checkbox" 
+                    title="Select All / Deselect All"
+                    onchange="toggleSelectAllTasks(this.checked)"
+                  />
+                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">ALL</span>
+                </div>
+              </th>
+              <th class="py-3 px-3 text-center w-16 border-r border-slate-300">
+                S. No.
+              </th>
+              <th class="py-3 px-4 border-r border-slate-300">
+                PARTICULARS
+              </th>
+              <th class="py-3 px-4 w-48 border-r border-slate-300">
+                PERIOD
+              </th>
+              <th class="py-3 px-4 border-r border-slate-300">
+                REMARK
+              </th>
+              <th class="py-3 px-3 text-center w-28 no-print">
+                ACTIONS
+              </th>
+            </tr>
+          </thead>
+          <tbody id="task-table-body">
+            <!-- Table rows dynamically populated by app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Bottom Quick Add Helper (Screen only) -->
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 no-print">
+        <div class="flex items-center gap-2">
+          <span>💡 <em>Tip: You can edit Particulars, Period, and Remarks directly inside the table.</em></span>
+        </div>
+        <button 
+          onclick="addSingleTask()" 
+          class="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+          + Add New Line
+        </button>
+      </div>
+
+      <!-- Official Print Footer (Visible only on Print) -->
+      <div class="print-footer px-8 py-6 text-xs text-slate-800">
+        <div class="flex justify-between items-end mt-12 pt-6">
+          <div class="text-center w-56">
+            <div class="border-b border-black pb-8"></div>
+            <p class="font-bold mt-2">Authorized Signatory / SPOC</p>
+            <p class="text-slate-600">(For Client Team)</p>
+          </div>
+          <div class="text-center w-56">
+            <div class="border-b border-black pb-8"></div>
+            <p class="font-bold mt-2">For M/S. ARYA ASSOCIATES</p>
+            <p class="text-slate-600">Authorized Signature</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- ⏰ DAILY 11:00 AM ALARM SETTINGS MODAL                         -->
+  <!-- ============================================================== -->
+  <div id="alarm-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">⏰</span>
+          <div>
+            <h3 class="font-bold text-base leading-tight text-white">Daily 11:00 AM Reminder</h3>
+            <p class="text-xs text-amber-400">Alarm & Notification for Client Pendencies</p>
+          </div>
+        </div>
+        <button onclick="closeAlarmModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        
+        <!-- Enable/Disable Alarm Toggle -->
+        <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200">
+          <div>
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-800">Daily Alarm Status</p>
+            <p class="text-xs text-slate-600">Rings audio alarm & shows reminder</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="alarm-enable-checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
+        <!-- Alarm Time Picker -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Reminder Time (Morning)
+          </label>
+          <input 
+            type="time" 
+            id="alarm-time-input" 
+            value="11:00" 
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-base font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+          />
+          <p class="text-[11px] text-slate-400 mt-1">Set to 11:00 AM for daily morning audit review.</p>
+        </div>
+
+        <!-- Buttons for Test Sound and Enable Desktop Notifications -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button 
+            type="button"
+            onclick="testAlarmSound()" 
+            class="flex items-center justify-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition">
+            🔊 Test Alarm Sound
+          </button>
+          
+          <button 
+            type="button"
+            onclick="requestNotificationPermission()" 
+            class="flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition">
+            🔔 Enable Popup Alerts
+          </button>
+        </div>
+
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button 
+          onclick="closeAlarmModal()" 
+          class="px-4 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-100 transition">
+          Cancel
+        </button>
+        <button 
+          onclick="saveAlarmModalSettings()" 
+          class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-black shadow-md transition">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- WHATSAPP MESSAGE MODAL (NORMAL WHATSAPP)                       -->
+  <!-- ============================================================== -->
+  <div id="whatsapp-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-white">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Send WhatsApp Message</h3>
+            <p class="text-xs text-emerald-100">Directly via standard WhatsApp</p>
+          </div>
+        </div>
+        <button onclick="closeWhatsAppModal()" class="text-emerald-100 hover:text-white text-xl font-bold p-1">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4">
+        
+        <!-- Mobile number input -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Client Mobile Number (Optional)
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-slate-400 font-semibold text-sm">+91</span>
+            <input 
+              type="text" 
+              id="wa-phone-number" 
+              placeholder="Enter 10-digit mobile number (or leave blank to pick chat)" 
+              class="w-full pl-12 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">If left blank, standard WhatsApp will open with contact picker.</p>
+        </div>
+
+        <!-- Mode Toggle: Pending only vs All -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Select Items to Include:
+          </label>
+          <div class="inline-flex rounded-lg border border-slate-200 p-1 bg-slate-50 gap-1 w-full">
+            <button 
+              id="wa-mode-pending" 
+              onclick="setWhatsAppMode('pending')" 
+              class="flex-1 py-1.5 rounded-md bg-emerald-600 text-white font-bold text-xs shadow text-center">
+              ⏳ Pending Only
+            </button>
+            <button 
+              id="wa-mode-all" 
+              onclick="setWhatsAppMode('all')" 
+              class="flex-1 py-1.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold text-center">
+              📋 All Items
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Preview Box -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Message Preview:
+            </label>
+            <button 
+              id="wa-copy-btn"
+              onclick="copyWhatsAppText()" 
+              class="text-xs text-emerald-700 font-semibold hover:underline flex items-center gap-1">
+              📋 Copy Text
+            </button>
+          </div>
+          <textarea 
+            id="wa-preview-text" 
+            readonly 
+            rows="6" 
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs font-mono text-slate-700 focus:outline-none resize-none leading-relaxed">
+          </textarea>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button 
+          onclick="closeWhatsAppModal()" 
+          class="px-4 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-100 transition">
+          Cancel
+        </button>
+        <button 
+          onclick="sendDirectWhatsApp()" 
+          class="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-md transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          Open in WhatsApp
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer (Screen only) -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center no-print mt-auto border-t border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>&copy; 2026 <strong>M/S. ARYA ASSOCIATES</strong> &bull; Audit & Client Pendencies System</p>
+      <p class="text-slate-500">All data automatically saved locally in browser storage.</p>
+    </div>
+  </footer>
+
+  <!-- App JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
