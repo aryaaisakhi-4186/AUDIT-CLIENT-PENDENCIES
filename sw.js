@@ -1,5 +1,5 @@
-// Service Worker for AUDIT-2026 PWA
-const CACHE_NAME = 'audit-2026-v2.1';
+// Service Worker for AUDIT-2026 PWA (Ultra-Fast Live Updates)
+const CACHE_NAME = 'audit-2026-v2.2-fast';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,11 +31,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network first, fallback to cache for static assets
   if (event.request.method !== 'GET') return;
 
+  // Network-First with Zero-Delay Fallback: ensures latest code loads immediately
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-cache' })
       .then((response) => {
         if (response && response.status === 200) {
           const responseClone = response.clone();
@@ -45,13 +45,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          if (event.request.headers.get('accept').includes('text/html')) {
-            return caches.match('./index.html');
-          }
-        });
-      })
+      .catch(() => caches.match(event.request))
   );
 });

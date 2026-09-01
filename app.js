@@ -252,9 +252,10 @@ function loadData() {
   }
 }
 
+const CLIENT_SESSION_ID = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 let cloudSyncTimeout = null;
 
-// Real-time Live Cloud Auto-Sync (Debounced on keystroke for fast typing)
+// Ultra-Fast Real-time Live Cloud Auto-Sync (150ms debounce for lightning fast response)
 function saveDataLive() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -267,6 +268,7 @@ function saveDataLive() {
   updateCloudSyncIndicator('syncing');
   cloudSyncTimeout = setTimeout(() => {
     if (firebaseDataRef && !isSyncingFromCloud) {
+      appData._lastSessionId = CLIENT_SESSION_ID;
       firebaseDataRef.set(appData)
         .then(() => {
           updateCloudSyncIndicator('connected');
@@ -276,10 +278,10 @@ function saveDataLive() {
           updateCloudSyncIndicator('error');
         });
     }
-  }, 350); // 350ms real-time cloud sync debounce
+  }, 150); // Ultra-fast 150ms real-time cloud sync debounce
 }
 
-// Immediate Cloud Save (For checkboxes, adding/deleting rows, client changes)
+// Immediate Cloud Save (0ms delay for checkboxes, adding/deleting rows, client changes)
 function saveData() {
   if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
 
@@ -292,9 +294,10 @@ function saveData() {
   // Push directly online to Google Firebase Cloud immediately
   if (firebaseDataRef && !isSyncingFromCloud) {
     updateCloudSyncIndicator('syncing');
+    appData._lastSessionId = CLIENT_SESSION_ID;
     firebaseDataRef.set(appData)
       .then(() => {
-        setTimeout(() => updateCloudSyncIndicator('connected'), 250);
+        setTimeout(() => updateCloudSyncIndicator('connected'), 150);
       })
       .catch(err => {
         console.error('Firebase online save error:', err);
@@ -342,10 +345,17 @@ function initFirebaseCloud() {
     firebaseDataRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
       if (cloudData && cloudData.clients && Array.isArray(cloudData.clients) && cloudData.clients.length > 0) {
+        // Echo suppression: If this update came from our own active session, skip re-rendering
+        if (cloudData._lastSessionId === CLIENT_SESSION_ID && !isSyncingFromCloud) {
+          isCloudConnected = true;
+          updateCloudSyncIndicator('connected');
+          return;
+        }
+
         const currentJson = JSON.stringify(appData);
         const cloudJson = JSON.stringify(cloudData);
 
-        // Only re-render if data is actually different (avoids cursor jumping)
+        // Only re-render if data is actually different
         if (currentJson !== cloudJson) {
           isSyncingFromCloud = true;
           appData = cloudData;
