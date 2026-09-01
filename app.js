@@ -139,8 +139,8 @@ function saveData() {
     console.error('Error saving data to storage:', err);
   }
 
-  // Push directly online to Google Firebase Cloud
-  if (isCloudConnected && firebaseDataRef && !isSyncingFromCloud) {
+  // Push directly online to Google Firebase Cloud immediately
+  if (firebaseDataRef && !isSyncingFromCloud) {
     updateCloudSyncIndicator('syncing');
     firebaseDataRef.set(appData)
       .then(() => {
@@ -1182,8 +1182,13 @@ function openAddClientModal() {
     tasks: []
   };
 
+  if (!Array.isArray(appData.clients)) {
+    appData.clients = [];
+  }
+
   appData.clients.push(newClient);
   appData.activeClientId = newId;
+
   saveData();
   renderAll();
 }
