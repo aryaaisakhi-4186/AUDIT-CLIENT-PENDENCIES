@@ -450,7 +450,7 @@ function closeCloudModal() {
 // 📄 OFFICIAL LETTERHEAD PDF ENGINE & DIRECT WHATSAPP SHARING
 // =========================================================================
 
-// Generate High-Definition Printable Letterhead HTML Structure
+// Generate High-Definition Printable Letterhead HTML Structure (Compact & Professional)
 function generateLetterheadHTML() {
   const client = getActiveClient();
   if (!client) return '';
@@ -466,7 +466,7 @@ function generateLetterheadHTML() {
   if (tasksToInclude.length === 0) {
     tableRowsHTML = `
       <tr>
-        <td colspan="4" style="padding: 24px; text-align: center; color: #16a34a; font-weight: bold; font-size: 14px;">
+        <td colspan="4" style="padding: 18px; text-align: center; color: #16a34a; font-weight: bold; font-size: 11px;">
           ✓ All audit requirements & documents have been completely received! No pending requirements.
         </td>
       </tr>
@@ -478,16 +478,16 @@ function generateLetterheadHTML() {
 
       tableRowsHTML += `
         <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 9px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 45px; vertical-align: top;">
+          <td style="padding: 6px 6px; text-align: center; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 36px; vertical-align: middle;">
             ${index + 1}
           </td>
-          <td style="padding: 9px 12px; font-weight: 700; color: #0f172a; font-size: 12px; border-right: 1px solid #cbd5e1; line-height: 1.45; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
+          <td style="padding: 6px 8px; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle;">
             ${escapeHtml(task.particulars || '')}
           </td>
-          <td style="padding: 9px 10px; font-weight: 600; color: #475569; font-size: 11.5px; border-right: 1px solid #cbd5e1; width: 130px; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
+          <td style="padding: 6px 8px; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 170px; text-align: center; white-space: nowrap; vertical-align: middle;">
             ${escapeHtml(task.period || cleanYear)}
           </td>
-          <td style="padding: 9px 10px; font-size: 11.5px; color: #334155; font-weight: 600; line-height: 1.45; word-break: break-word; white-space: pre-wrap; vertical-align: top;">
+          <td style="padding: 6px 8px; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle;">
             ${userRemark}
           </td>
         </tr>
@@ -496,58 +496,58 @@ function generateLetterheadHTML() {
   }
 
   return `
-    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 24px 28px; width: 100%; box-sizing: border-box; position: relative;">
+    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 16px 20px; width: 100%; box-sizing: border-box; position: relative;">
       
       <!-- LETTERHEAD TOP BRANDING -->
-      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px;">
-        <h1 style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 900; letter-spacing: 2px; color: #0f172a; margin: 0 0 3px 0; text-transform: uppercase;">
+      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
+        <h1 style="font-family: 'Cinzel', serif; font-size: 19px; font-weight: 900; letter-spacing: 1.5px; color: #0f172a; margin: 0 0 2px 0; text-transform: uppercase;">
           M/S. ARYA ASSOCIATES
         </h1>
-        <div style="width: 80px; height: 2px; background-color: #b45309; margin: 0 auto 5px auto;"></div>
-        <p style="font-size: 10.5px; font-weight: 800; color: #475569; letter-spacing: 1px; margin: 0; text-transform: uppercase;">
+        <div style="width: 60px; height: 2px; background-color: #b45309; margin: 0 auto 4px auto;"></div>
+        <p style="font-size: 9px; font-weight: 800; color: #475569; letter-spacing: 0.8px; margin: 0; text-transform: uppercase;">
           AUDIT REQUIREMENTS & CLIENT PENDENCY REQUISITION
         </p>
       </div>
 
       <!-- CLIENT & DATE METADATA BOX -->
-      <div style="background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start;">
         <div style="flex: 1;">
-          <p style="margin: 0 0 2px 0; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
-          <h2 style="margin: 0; font-size: 17px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
+          <p style="margin: 0 0 2px 0; font-size: 8.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
+          <h2 style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
             ${escapeHtml(client.name)}
           </h2>
         </div>
-        <div style="text-align: right; min-width: 160px;">
-          <div style="display: inline-block; background-color: #0f172a; color: #fbbf24; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 900; margin-bottom: 3px;">
+        <div style="text-align: right; min-width: 150px;">
+          <div style="display: inline-block; background-color: #0f172a; color: #fbbf24; padding: 2px 8px; border-radius: 12px; font-size: 9.5px; font-weight: 900; margin-bottom: 2px;">
             📅 FY ${escapeHtml(cleanYear)}
           </div>
-          <p style="margin: 2px 0 0 0; font-size: 10.5px; font-weight: 700; color: #475569;">
+          <p style="margin: 1px 0 0 0; font-size: 9.5px; font-weight: 700; color: #475569;">
             <strong>Date:</strong> ${todayStr}
           </p>
         </div>
       </div>
 
       <!-- SUBJECT TITLE -->
-      <div style="margin-bottom: 12px;">
-        <p style="margin: 0; font-size: 11.5px; font-weight: 800; color: #0f172a;">
+      <div style="margin-bottom: 8px;">
+        <p style="margin: 0; font-size: 10px; font-weight: 800; color: #0f172a;">
           <span style="text-decoration: underline;">SUB:</span> Requisition for Pending Statutory Audit Documents & Records
         </p>
       </div>
 
       <!-- AUDIT CHECKLIST TABLE -->
-      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #0f172a; margin-bottom: 0; font-size: 11.5px; table-layout: fixed;">
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 10px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #0f172a; color: #ffffff;">
-            <th style="padding: 8px 6px; text-align: center; width: 45px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 6px 4px; text-align: center; width: 36px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               S. No.
             </th>
-            <th style="padding: 8px 12px; text-align: left; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PARTICULARS OF AUDIT REQUIREMENT
             </th>
-            <th style="padding: 8px 10px; text-align: left; width: 130px; font-size: 10.5px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 6px 8px; text-align: center; width: 170px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PERIOD
             </th>
-            <th style="padding: 8px 10px; text-align: left; width: 170px; font-size: 10.5px; font-weight: 900; text-transform: uppercase;">
+            <th style="padding: 6px 8px; text-align: left; width: 165px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
               STATUS / REMARKS
             </th>
           </tr>
@@ -557,7 +557,7 @@ function generateLetterheadHTML() {
         </tbody>
       </table>
 
-      <!-- Bottom is kept completely clean without unwanted notes or clutter -->
+      <!-- Bottom is kept clean without unwanted notes -->
 
     </div>
   `;
