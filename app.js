@@ -465,7 +465,7 @@ function generateLetterheadHTML() {
   let tableRowsHTML = '';
   if (tasksToInclude.length === 0) {
     tableRowsHTML = `
-      <tr>
+      <tr style="page-break-inside: avoid; break-inside: avoid;">
         <td colspan="4" style="padding: 18px; text-align: center; color: #16a34a; font-weight: bold; font-size: 11px;">
           ✓ All audit requirements & documents have been completely received! No pending requirements.
         </td>
@@ -477,17 +477,21 @@ function generateLetterheadHTML() {
       const userRemark = (task.remark && task.remark.trim()) ? escapeHtml(task.remark.trim()) : '';
 
       tableRowsHTML += `
-        <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 6px 6px; text-align: center; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 36px; vertical-align: middle;">
+        <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; page-break-inside: avoid !important; break-inside: avoid !important;">
+          <!-- S. NO. (Left Aligned) -->
+          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 42px; vertical-align: middle; page-break-inside: avoid;">
             ${index + 1}
           </td>
-          <td style="padding: 6px 8px; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle;">
+          <!-- PARTICULARS (Left Aligned) -->
+          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle; page-break-inside: avoid;">
             ${escapeHtml(task.particulars || '')}
           </td>
-          <td style="padding: 6px 8px; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 170px; text-align: center; white-space: nowrap; vertical-align: middle;">
+          <!-- PERIOD (Left Aligned & Clean Single-line) -->
+          <td style="padding: 6px 8px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 170px; white-space: nowrap; vertical-align: middle; page-break-inside: avoid;">
             ${escapeHtml(task.period || cleanYear)}
           </td>
-          <td style="padding: 6px 8px; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle;">
+          <!-- STATUS / REMARKS (Left Aligned) -->
+          <td style="padding: 6px 8px; text-align: left; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle; page-break-inside: avoid;">
             ${userRemark}
           </td>
         </tr>
@@ -499,7 +503,7 @@ function generateLetterheadHTML() {
     <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 16px 20px; width: 100%; box-sizing: border-box; position: relative;">
       
       <!-- LETTERHEAD TOP BRANDING -->
-      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
+      <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid;">
         <h1 style="font-family: 'Cinzel', serif; font-size: 19px; font-weight: 900; letter-spacing: 1.5px; color: #0f172a; margin: 0 0 2px 0; text-transform: uppercase;">
           M/S. ARYA ASSOCIATES
         </h1>
@@ -510,7 +514,7 @@ function generateLetterheadHTML() {
       </div>
 
       <!-- CLIENT & DATE METADATA BOX -->
-      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; page-break-inside: avoid; break-inside: avoid;">
         <div style="flex: 1;">
           <p style="margin: 0 0 2px 0; font-size: 8.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
           <h2 style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
@@ -528,23 +532,23 @@ function generateLetterheadHTML() {
       </div>
 
       <!-- SUBJECT TITLE -->
-      <div style="margin-bottom: 8px;">
+      <div style="margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid;">
         <p style="margin: 0; font-size: 10px; font-weight: 800; color: #0f172a;">
           <span style="text-decoration: underline;">SUB:</span> Requisition for Pending Statutory Audit Documents & Records
         </p>
       </div>
 
-      <!-- AUDIT CHECKLIST TABLE -->
+      <!-- AUDIT CHECKLIST TABLE (All Columns Left Aligned) -->
       <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 10px; table-layout: fixed;">
         <thead>
-          <tr style="background-color: #0f172a; color: #ffffff;">
-            <th style="padding: 6px 4px; text-align: center; width: 36px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+          <tr style="background-color: #0f172a; color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
+            <th style="padding: 6px 8px; text-align: left; width: 42px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               S. No.
             </th>
             <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PARTICULARS OF AUDIT REQUIREMENT
             </th>
-            <th style="padding: 6px 8px; text-align: center; width: 170px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 6px 8px; text-align: left; width: 170px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PERIOD
             </th>
             <th style="padding: 6px 8px; text-align: left; width: 165px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
@@ -563,7 +567,7 @@ function generateLetterheadHTML() {
   `;
 }
 
-// Download Letterhead PDF File directly to Computer / Mobile (0.75" Bottom Margin)
+// Download Letterhead PDF File directly to Computer / Mobile (0.75" Bottom Margin & No Row Slicing)
 async function downloadLetterheadPDF() {
   const client = getActiveClient();
   if (!client) return;
@@ -583,7 +587,8 @@ async function downloadLetterheadPDF() {
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2.5, useCORS: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
   };
 
   try {
@@ -597,7 +602,7 @@ async function downloadLetterheadPDF() {
   }
 }
 
-// Share Official Letterhead PDF on WhatsApp (0.75" Bottom Margin)
+// Share Official Letterhead PDF on WhatsApp (0.75" Bottom Margin & No Row Slicing)
 async function shareLetterheadPDFOnWhatsApp() {
   const client = getActiveClient();
   if (!client) return;
@@ -621,7 +626,8 @@ async function shareLetterheadPDFOnWhatsApp() {
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2.5, useCORS: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
   };
 
   const shareBtn = document.getElementById('btn-share-whatsapp-pdf');
@@ -976,8 +982,8 @@ function renderTasksTable() {
         />
       </td>
 
-      <!-- S. NO. -->
-      <td class="px-2 py-2 text-center font-bold text-slate-700 w-16" style="vertical-align: top; padding-top: 10px;">
+      <!-- S. NO. (Left Aligned) -->
+      <td class="px-3 py-2 text-left font-bold text-slate-700 w-16" style="vertical-align: top; padding-top: 10px;">
         ${actualIndex}
       </td>
 
