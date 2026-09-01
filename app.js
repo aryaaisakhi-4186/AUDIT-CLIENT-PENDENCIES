@@ -1301,6 +1301,33 @@ function exportToExcel() {
   document.body.removeChild(link);
 }
 
+// Full App Reset (Safety Protected)
+function fullAppResetPrompt() {
+  const confirm1 = confirm("⚠️ WARNING: Are you sure you want to RESET the entire app?\n\nThis will delete all test/sample clients and tasks from both this device and Google Cloud to give you a fresh, clean workspace.");
+  if (!confirm1) return;
+
+  const confirm2 = prompt("To confirm full reset, please type 'RESET' in uppercase below:");
+  if (confirm2 && confirm2.trim().toUpperCase() === 'RESET') {
+    // Fresh initial blank workspace
+    appData = {
+      activeClientId: 'client-1',
+      clients: [
+        {
+          id: 'client-' + Date.now(),
+          name: 'ENTER CLIENT NAME',
+          fy: 'FINANCIAL YEAR 2025-26',
+          tasks: []
+        }
+      ]
+    };
+    saveData();
+    renderAll();
+    alert("✅ App has been completely RESET!\n\nYou now have a fresh clean workspace ready to add your real audit clients.");
+  } else if (confirm2 !== null) {
+    alert("Reset cancelled. You did not type 'RESET'.");
+  }
+}
+
 // Backup & Restore
 function backupAllData() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
