@@ -914,11 +914,12 @@ function renderTasksTable() {
       <td class="px-3 py-2 min-w-[320px]">
         <input 
           type="text" 
+          data-col="particulars"
           value="${escapeHtml(task.particulars)}" 
           placeholder="Enter audit requirement or pending document..."
           class="table-input font-medium text-slate-800 text-sm ${task.checked ? 'line-through text-slate-400' : ''}"
           onchange="updateTaskProperty('${task.id}', 'particulars', this.value)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();insertTaskAfter('${task.id}');}"
+          onkeydown="handleTableInputKey(event, '${task.id}', 'particulars')"
         />
       </td>
 
@@ -926,11 +927,12 @@ function renderTasksTable() {
       <td class="px-3 py-2 w-48">
         <input 
           type="text" 
+          data-col="period"
           value="${escapeHtml(task.period)}" 
           placeholder="e.g. FY 2025-26, Q3, Monthly"
           class="table-input text-slate-700 text-sm"
           onchange="updateTaskProperty('${task.id}', 'period', this.value)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();insertTaskAfter('${task.id}');}"
+          onkeydown="handleTableInputKey(event, '${task.id}', 'period')"
         />
       </td>
 
@@ -938,36 +940,41 @@ function renderTasksTable() {
       <td class="px-3 py-2 min-w-[260px]">
         <input 
           type="text" 
+          data-col="remark"
           value="${escapeHtml(task.remark)}" 
           placeholder="Add auditor remarks, client responses, or follow-up status..."
           class="table-input text-slate-600 text-sm"
           onchange="updateTaskProperty('${task.id}', 'remark', this.value)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();insertTaskAfter('${task.id}');}"
+          onkeydown="handleTableInputKey(event, '${task.id}', 'remark')"
         />
       </td>
 
-      <!-- ACTIONS: [+] | [▲] | [▼] | [🗑️] -->
+      <!-- ACTIONS: [+] | [▲] | [▼] | [🗑️] (tabindex -1 so Tab key stays in table columns) -->
       <td class="px-2 py-2 text-center w-28 no-print action-cell">
         <div class="flex items-center justify-center gap-1">
           <button 
-            onclick="insertTaskAfter('${task.id}')" 
+            tabindex="-1"
+            onclick="insertTaskAfter('${task.id}', 'particulars')" 
             title="Add New Line Below (+)" 
             class="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded font-black text-sm transition shadow-sm">
             +
           </button>
           <button 
+            tabindex="-1"
             onclick="moveTask('${task.id}', -1)" 
             title="Move Up" 
             class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded text-xs transition">
             ▲
           </button>
           <button 
+            tabindex="-1"
             onclick="moveTask('${task.id}', 1)" 
             title="Move Down" 
             class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded text-xs transition">
             ▼
           </button>
           <button 
+            tabindex="-1"
             onclick="deleteTask('${task.id}')" 
             title="Delete Row" 
             class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition">
@@ -981,6 +988,88 @@ function renderTasksTable() {
 
     taskTableBody.appendChild(tr);
   });
+}
+
+// ⌨️ Excel-Grade Keyboard Navigation Handler
+function handleTableInputKey(event, taskId, colName) {
+  const client = getActiveClient();
+  if (!client) return;
+
+  const rows = Array.from(taskTableBody.querySelectorAll('tr'));
+  const currentRow = event.target.closest('tr');
+  const rowIndex = rows.indexOf(currentRow);
+
+  if (event.key === 'Tab') {
+    if (!event.shiftKey) {
+      // Forward Tab
+      if (colName === 'particulars') {
+        event.preventDefault();
+        const nextInput = currentRow.querySelector('input[data-col="period"]');
+        if (nextInput) nextInput.focus();
+      } else if (colName === 'period') {
+        event.preventDefault();
+        const nextInput = currentRow.querySelector('input[data-col="remark"]');
+        if (nextInput) nextInput.focus();
+      } else if (colName === 'remark') {
+        event.preventDefault();
+        if (rowIndex === rows.length - 1) {
+          // Last row: Auto add a new row and focus into particulars
+          addSingleTask('', '', '', 'particulars');
+        } else {
+          // Move to particulars of next row
+          const nextRow = rows[rowIndex + 1];
+          if (nextRow) {
+            const nextInput = nextRow.querySelector('input[data-col="particulars"]');
+            if (nextInput) nextInput.focus();
+          }
+        }
+      }
+    } else {
+      // Shift + Tab (Backward)
+      if (colName === 'remark') {
+        event.preventDefault();
+        const prevInput = currentRow.querySelector('input[data-col="period"]');
+        if (prevInput) prevInput.focus();
+      } else if (colName === 'period') {
+        event.preventDefault();
+        const prevInput = currentRow.querySelector('input[data-col="particulars"]');
+        if (prevInput) prevInput.focus();
+      } else if (colName === 'particulars') {
+        if (rowIndex > 0) {
+          event.preventDefault();
+          const prevRow = rows[rowIndex - 1];
+          if (prevRow) {
+            const prevInput = prevRow.querySelector('input[data-col="remark"]');
+            if (prevInput) prevInput.focus();
+          }
+        }
+      }
+    }
+  } else if (event.key === 'Enter') {
+    // Enter key creates a row and stays in the EXACT SAME COLUMN
+    event.preventDefault();
+    insertTaskAfter(taskId, colName);
+  } else if (event.key === 'ArrowDown') {
+    // Navigate straight down in same column
+    if (rowIndex < rows.length - 1) {
+      event.preventDefault();
+      const nextRow = rows[rowIndex + 1];
+      if (nextRow) {
+        const input = nextRow.querySelector(`input[data-col="${colName}"]`);
+        if (input) input.focus();
+      }
+    }
+  } else if (event.key === 'ArrowUp') {
+    // Navigate straight up in same column
+    if (rowIndex > 0) {
+      event.preventDefault();
+      const prevRow = rows[rowIndex - 1];
+      if (prevRow) {
+        const input = prevRow.querySelector(`input[data-col="${colName}"]`);
+        if (input) input.focus();
+      }
+    }
+  }
 }
 
 function updateStats() {
@@ -1050,7 +1139,7 @@ function toggleSelectAllTasks(forcedState) {
 }
 
 // Insert Task After a Specific Task (Plus Button)
-function insertTaskAfter(taskId) {
+function insertTaskAfter(taskId, targetCol = 'particulars') {
   const client = getActiveClient();
   if (!client) return;
 
@@ -1076,7 +1165,6 @@ function insertTaskAfter(taskId) {
     client.tasks.push(newTask);
   }
 
-  // If filtered to 'completed', auto-switch to 'all' so new pending task is visible immediately!
   if (currentFilter === 'completed') {
     currentFilter = 'all';
     document.querySelectorAll('[data-filter]').forEach(b => {
@@ -1090,7 +1178,6 @@ function insertTaskAfter(taskId) {
     });
   }
 
-  // Clear task search box if active so new row is not filtered out
   if (searchQuery.trim()) {
     searchQuery = '';
     const searchInput = document.getElementById('search-tasks');
@@ -1104,7 +1191,7 @@ function insertTaskAfter(taskId) {
     const rows = taskTableBody.querySelectorAll('tr');
     const newRowIndex = targetIndex !== -1 ? targetIndex + 1 : rows.length - 1;
     if (rows[newRowIndex]) {
-      const input = rows[newRowIndex].querySelector('input[type="text"]');
+      const input = rows[newRowIndex].querySelector(`input[data-col="${targetCol}"]`) || rows[newRowIndex].querySelector('input[type="text"]');
       if (input) {
         input.focus();
         input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1114,7 +1201,7 @@ function insertTaskAfter(taskId) {
 }
 
 // Task CRUD Operations
-function addSingleTask(particulars = '', period = '', remark = '') {
+function addSingleTask(particulars = '', period = '', remark = '', targetCol = 'particulars') {
   const client = getActiveClient();
   if (!client) return;
 
@@ -1135,7 +1222,6 @@ function addSingleTask(particulars = '', period = '', remark = '') {
 
   client.tasks.push(newTask);
 
-  // If filtered to 'completed', auto-switch to 'all' so new pending task is visible immediately!
   if (currentFilter === 'completed') {
     currentFilter = 'all';
     document.querySelectorAll('[data-filter]').forEach(b => {
@@ -1149,7 +1235,6 @@ function addSingleTask(particulars = '', period = '', remark = '') {
     });
   }
 
-  // Clear task search query so new empty row is not filtered out
   if (searchQuery.trim()) {
     searchQuery = '';
     const searchInput = document.getElementById('search-tasks');
@@ -1159,12 +1244,11 @@ function addSingleTask(particulars = '', period = '', remark = '') {
   saveData();
   renderAll();
 
-  // Auto focus into the newly added row
   setTimeout(() => {
     const rows = taskTableBody.querySelectorAll('tr');
     if (rows.length > 0) {
       const lastRow = rows[rows.length - 1];
-      const input = lastRow.querySelector('input[type="text"]');
+      const input = lastRow.querySelector(`input[data-col="${targetCol}"]`) || lastRow.querySelector('input[type="text"]');
       if (input) {
         input.focus();
         input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
