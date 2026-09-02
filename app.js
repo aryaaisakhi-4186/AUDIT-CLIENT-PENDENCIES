@@ -507,16 +507,16 @@ function generateLetterheadHTML() {
           <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 42px; vertical-align: middle; page-break-inside: avoid;">
             ${index + 1}
           </td>
-          <!-- PARTICULARS (Left Aligned) -->
-          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle; page-break-inside: avoid;">
+          <!-- PARTICULARS (Left Aligned & Multi-line Support) -->
+          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle; white-space: pre-wrap; page-break-inside: avoid;">
             ${escapeHtml(task.particulars || '')}
           </td>
           <!-- PERIOD (Left Aligned & Clean Single-line) -->
           <td style="padding: 6px 8px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 170px; white-space: nowrap; vertical-align: middle; page-break-inside: avoid;">
             ${escapeHtml(task.period || cleanYear)}
           </td>
-          <!-- STATUS / REMARKS (Left Aligned) -->
-          <td style="padding: 6px 8px; text-align: left; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle; page-break-inside: avoid;">
+          <!-- STATUS / REMARKS (Left Aligned & Multi-line Support with Ctrl+Enter) -->
+          <td style="padding: 6px 8px; text-align: left; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle; white-space: pre-wrap; page-break-inside: avoid;">
             ${userRemark}
           </td>
         </tr>
@@ -1155,9 +1155,25 @@ function handleTableInputKey(event, taskId, colName) {
       }
     }
   } else if (event.key === 'Enter') {
-    // Enter key creates a row and stays in the EXACT SAME COLUMN
-    event.preventDefault();
-    insertTaskAfter(taskId, colName);
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      // 📝 Ctrl+Enter / Shift+Enter / Alt+Enter: Insert second sentence on a NEW LINE (Line break)
+      if (colName === 'remark' || colName === 'particulars') {
+        event.preventDefault();
+        const textarea = event.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        textarea.value = val.substring(0, start) + "\n" + val.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 1;
+        autoResizeTextarea(textarea);
+        updateTaskPropertyLive(taskId, colName, textarea.value);
+        return;
+      }
+    } else {
+      // Plain Enter key creates a row and stays in the EXACT SAME COLUMN
+      event.preventDefault();
+      insertTaskAfter(taskId, colName);
+    }
   } else if (event.key === 'ArrowDown') {
     // Navigate straight down in same column
     if (rowIndex < rows.length - 1) {
