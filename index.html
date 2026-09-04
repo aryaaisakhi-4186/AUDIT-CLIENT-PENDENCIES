@@ -1523,6 +1523,25 @@
             </select>
           </div>
 
+          <!-- 💬 Custom AI Instructions (Period, Remark, Custom Rules) -->
+          <div class="bg-white border border-purple-200 rounded-2xl p-4 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span>💬</span> Custom Instructions for AI (Optional):
+              </label>
+              <span class="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md font-bold">Prompt & Rules</span>
+            </div>
+            <input 
+              type="text" 
+              id="ai-user-instructions-upload" 
+              placeholder="e.g. Set period as FY 2025-26 and remark as 'Pending from accounts'..." 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition shadow-inner"
+            />
+            <p class="text-[10px] text-slate-500">
+              💡 Aap yahan AI ko bata sakte hain ki <strong>Period</strong> (e.g. FY 2025-26) ya <strong>Remark</strong> (e.g. Pending from accounts) kya rakhna hai.
+            </p>
+          </div>
+
           <!-- Start AI Scan Action Button -->
           <button 
             type="button" 
@@ -1569,6 +1588,22 @@
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none">
               <!-- Dynamically populated by JS -->
             </select>
+          </div>
+
+          <!-- 💬 Custom AI Instructions for Text -->
+          <div class="bg-white border border-purple-200 rounded-2xl p-4 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span>💬</span> Custom Instructions for AI (Optional):
+              </label>
+              <span class="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md font-bold">Prompt & Rules</span>
+            </div>
+            <input 
+              type="text" 
+              id="ai-user-instructions-text" 
+              placeholder="e.g. Set period as FY 2025-26 and remark as 'Pending'..." 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition shadow-inner"
+            />
           </div>
 
           <!-- Process Text Action Button -->

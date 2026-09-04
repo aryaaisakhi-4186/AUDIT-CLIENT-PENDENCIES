@@ -2972,6 +2972,8 @@ async function processAIFileScan() {
 
   const file = aiSelectedFile;
   const fileName = file.name.toLowerCase();
+  const instructionsInput = document.getElementById('ai-user-instructions-upload');
+  const userInstructions = instructionsInput ? instructionsInput.value.trim() : '';
 
   setAILoading(true, "🧠 AI Agent Analyzing Document...", `Reading ${file.name} with Agentic AI OCR...`);
 
@@ -2981,16 +2983,16 @@ async function processAIFileScan() {
 
     // 1. EXCEL / CSV SPREADSHEETS (.xlsx, .xls, .csv)
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) {
-      await processExcelFileWithSheetJS(file);
+      await processExcelFileWithSheetJS(file, userInstructions);
       return;
     }
 
     // 2. PDF DOCUMENTS (.pdf)
     if (fileName.endsWith('.pdf')) {
       if (geminiKey) {
-        await processMultimodalWithGemini(file, geminiKey);
+        await processMultimodalWithGemini(file, geminiKey, userInstructions);
       } else {
-        await processPDFWithPDFJS(file);
+        await processPDFWithPDFJS(file, userInstructions);
       }
       return;
     }
@@ -2998,16 +3000,16 @@ async function processAIFileScan() {
     // 3. IMAGES / PHOTOS / HANDWRITTEN NOTES (JPG, PNG, WebP)
     if (file.type.startsWith('image/')) {
       if (geminiKey) {
-        await processMultimodalWithGemini(file, geminiKey);
+        await processMultimodalWithGemini(file, geminiKey, userInstructions);
       } else {
-        await processImageWithTesseract(file);
+        await processImageWithTesseract(file, userInstructions);
       }
       return;
     }
 
     // Fallback: Read as text
     const text = await file.text();
-    const tasks = smartHeuristicTextParser(text);
+    const tasks = smartHeuristicTextParser(text, userInstructions);
     displayExtractedAITasks(tasks);
 
   } catch (err) {
@@ -3018,18 +3020,24 @@ async function processAIFileScan() {
 }
 
 // 📸 GEMINI 1.5 FLASH MULTIMODAL API (Handwriting & Vision Expert)
-async function processMultimodalWithGemini(file, apiKey) {
-  setAILoading(true, "🌟 Google Gemini Vision AI Processing...", "Reading handwriting & structuring audit requirements...");
+async function processMultimodalWithGemini(file, apiKey, userInstructions = '') {
+  setAILoading(true, "🌟 Google Gemini Vision AI Processing...", "Reading document & structuring into individual audit requirement rows...");
 
   const base64Data = await fileToBase64(file);
   const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
+  const customRuleText = userInstructions 
+    ? `\nIMPORTANT USER INSTRUCTION: "${userInstructions}". Please strictly format each requirement into its own separate row and apply the requested period/remark.` 
+    : '';
+
   const promptText = `You are an expert Chartered Accountant and Audit Lead for M/S. ARYA ASSOCIATES.
-Extract all audit pendencies, pending document requirements, and checklist tasks from this document/image.
-For each item, extract:
-1. "particulars": Clear, professional name of the audit requirement / document.
-2. "period": Financial period (e.g. "FY 2025-26", "Q3", "As on 31-03-2026", or default "FY 2025-26" if not specified).
-3. "remark": Any specific note, status, or follow-up remark (e.g. "Pending from client", "ITC mismatch", or leave empty if none).
+Extract ALL audit pendencies, pending document requirements, and checklist tasks from this document/image.
+
+CRITICAL RULES:
+1. Every individual requirement/document MUST be a SEPARATE object in the JSON array (do NOT merge multiple requirements into one row).
+2. "particulars": Clear, professional name of the audit requirement / document.
+3. "period": Financial period (e.g. "FY 2025-26", "Q3", "As on 31-03-2026", or default "FY 2025-26" if not specified).
+4. "remark": Any specific note, follow-up status, or remark (or empty if none).${customRuleText}
 
 Return ONLY a pure, valid JSON array of objects. Do NOT include markdown blocks or any conversational text.
 Example format:
@@ -3074,7 +3082,7 @@ Example format:
 }
 
 // 📊 SHEETJS EXCEL PARSER (.xlsx, .xls, .csv)
-async function processExcelFileWithSheetJS(file) {
+async function processExcelFileWithSheetJS(file, userInstructions = '') {
   setAILoading(true, "📊 Parsing Excel Spreadsheet...", "Reading worksheets, rows and columns with SheetJS...");
 
   if (typeof XLSX === 'undefined') {
@@ -3091,13 +3099,22 @@ async function processExcelFileWithSheetJS(file) {
     throw new Error("The selected Excel file is empty.");
   }
 
-  const tasks = parseExcelRowsToTasks(rawRows);
+  const tasks = parseExcelRowsToTasks(rawRows, userInstructions);
   displayExtractedAITasks(tasks);
 }
 
-function parseExcelRowsToTasks(rows) {
+function parseExcelRowsToTasks(rows, userInstructions = '') {
   const tasks = [];
   if (rows.length === 0) return tasks;
+
+  let defaultPeriod = 'FY 2025-26';
+  let defaultRemark = '';
+
+  if (userInstructions) {
+    const parsedRules = extractInstructionOverrides(userInstructions);
+    if (parsedRules.period) defaultPeriod = parsedRules.period;
+    if (parsedRules.remark) defaultRemark = parsedRules.remark;
+  }
 
   // Search for header row index
   let headerIndex = -1;
@@ -3132,26 +3149,24 @@ function parseExcelRowsToTasks(rows) {
     if (!Array.isArray(row) || row.length === 0) continue;
 
     let particulars = '';
-    let period = 'FY 2025-26';
-    let remark = '';
+    let period = defaultPeriod;
+    let remark = defaultRemark;
 
     if (particularsCol !== -1) {
       particulars = String(row[particularsCol] || '').trim();
       if (periodCol !== -1 && row[periodCol]) period = String(row[periodCol]).trim();
       if (remarkCol !== -1 && row[remarkCol]) remark = String(row[remarkCol]).trim();
     } else {
-      // Fallback: 1st string cell is particulars, 2nd is period, 3rd is remark
       const textCells = row.filter(c => c !== undefined && c !== null && String(c).trim() !== '');
       if (textCells.length > 0) {
-        // Skip purely numeric S.No.
         if (typeof textCells[0] === 'number' || /^\d+$/.test(String(textCells[0]).trim())) {
           particulars = String(textCells[1] || '').trim();
-          period = textCells[2] ? String(textCells[2]).trim() : 'FY 2025-26';
-          remark = textCells[3] ? String(textCells[3]).trim() : '';
+          period = textCells[2] ? String(textCells[2]).trim() : defaultPeriod;
+          remark = textCells[3] ? String(textCells[3]).trim() : defaultRemark;
         } else {
           particulars = String(textCells[0] || '').trim();
-          period = textCells[1] ? String(textCells[1]).trim() : 'FY 2025-26';
-          remark = textCells[2] ? String(textCells[2]).trim() : '';
+          period = textCells[1] ? String(textCells[1]).trim() : defaultPeriod;
+          remark = textCells[2] ? String(textCells[2]).trim() : defaultRemark;
         }
       }
     }
@@ -3159,8 +3174,8 @@ function parseExcelRowsToTasks(rows) {
     if (particulars && particulars.length > 1 && !/^(total|s\.?\s*no\.?|sr|#)$/i.test(particulars)) {
       tasks.push({
         particulars: particulars,
-        period: period || 'FY 2025-26',
-        remark: remark || ''
+        period: period || defaultPeriod,
+        remark: remark || defaultRemark
       });
     }
   }
@@ -3168,9 +3183,9 @@ function parseExcelRowsToTasks(rows) {
   return tasks;
 }
 
-// 📄 PDF.JS OFFLINE PARSER
-async function processPDFWithPDFJS(file) {
-  setAILoading(true, "📄 Reading PDF Document...", "Extracting text pages with PDF.js engine...");
+// 📄 PDF.JS OFFLINE PARSER with Vertical Y-Coordinate Line Grouping
+async function processPDFWithPDFJS(file, userInstructions = '') {
+  setAILoading(true, "📄 Reading PDF Document...", "Extracting individual requirement rows from PDF pages...");
 
   if (typeof pdfjsLib === 'undefined') {
     throw new Error("PDF.js library not loaded. Check internet connection.");
@@ -3180,21 +3195,43 @@ async function processPDFWithPDFJS(file) {
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
+  let allLines = [];
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
-    const pageText = content.items.map(item => item.str).join(' ');
-    fullText += pageText + '\n';
+    
+    // Group text items by vertical Y-coordinate (tolerance 5px)
+    const linesByY = {};
+    content.items.forEach(item => {
+      const str = item.str;
+      if (!str || !str.trim()) return;
+      const yKey = Math.round(item.transform[5] / 5) * 5;
+      if (!linesByY[yKey]) {
+        linesByY[yKey] = [];
+      }
+      linesByY[yKey].push({ x: item.transform[4], str: str });
+    });
+
+    // Sort lines from top of page to bottom (higher Y in PDF is top of page)
+    const sortedYKeys = Object.keys(linesByY).map(Number).sort((a, b) => b - a);
+
+    sortedYKeys.forEach(y => {
+      // Sort words from left to right
+      const lineItems = linesByY[y].sort((a, b) => a.x - b.x);
+      const lineText = lineItems.map(i => i.str.trim()).filter(Boolean).join(' ');
+      if (lineText.length > 1) {
+        allLines.push(lineText);
+      }
+    });
   }
 
-  const tasks = smartHeuristicTextParser(fullText);
+  const tasks = smartHeuristicTextParser(allLines.join('\n'), userInstructions);
   displayExtractedAITasks(tasks);
 }
 
 // 📸 TESSERACT.JS CLIENT-SIDE OCR (Photos & Handwritten Notes)
-async function processImageWithTesseract(file) {
+async function processImageWithTesseract(file, userInstructions = '') {
   setAILoading(true, "📸 Scanning Handwritten Note / Image...", "Running OCR text recognition with Tesseract engine...");
 
   if (typeof Tesseract === 'undefined') {
@@ -3211,7 +3248,7 @@ async function processImageWithTesseract(file) {
   });
 
   const rawText = result.data.text || '';
-  const tasks = smartHeuristicTextParser(rawText);
+  const tasks = smartHeuristicTextParser(rawText, userInstructions);
   displayExtractedAITasks(tasks);
 }
 
@@ -3219,17 +3256,19 @@ async function processImageWithTesseract(file) {
 function processAITextScan() {
   const textarea = document.getElementById('ai-raw-text-input');
   const rawText = textarea ? textarea.value.trim() : '';
+  const instructionsInput = document.getElementById('ai-user-instructions-text');
+  const userInstructions = instructionsInput ? instructionsInput.value.trim() : '';
 
   if (!rawText) {
     alert("⚠️ Please paste some text, handwritten notes, or WhatsApp requirements first.");
     return;
   }
 
-  setAILoading(true, "🧠 Analyzing Text Structure...", "Extracting requirements, periods and remarks...");
+  setAILoading(true, "🧠 Analyzing Text Structure...", "Extracting requirements into separate rows...");
 
   setTimeout(() => {
     try {
-      const tasks = smartHeuristicTextParser(rawText);
+      const tasks = smartHeuristicTextParser(rawText, userInstructions);
       displayExtractedAITasks(tasks);
     } catch (e) {
       setAILoading(false);
@@ -3238,13 +3277,57 @@ function processAITextScan() {
   }, 400);
 }
 
-// ⚡ BUILT-IN SMART HEURISTIC TEXT PARSER
-function smartHeuristicTextParser(rawText) {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
-  const tasks = [];
-  const defaultFY = (document.getElementById('ai-default-fy') && document.getElementById('ai-default-fy').value.trim()) || 'FY 2025-26';
+// Extract custom period / remark overrides from user's instruction string
+function extractInstructionOverrides(instructionText) {
+  const res = { period: '', remark: '' };
+  if (!instructionText) return res;
 
-  lines.forEach(line => {
+  // Check period in instruction (e.g. "period as FY 2025-26" or "FY 2024-25" or "Q3")
+  const periodMatch = instructionText.match(/(?:period\s*(?:as|is|:)?\s*["']?([^\,"'\;\n]+)["']?|(?:\bFY\s*)?(\b20\d\d[-–]\d{2,4}\b|Q[1-4]\b))/i);
+  if (periodMatch) {
+    res.period = (periodMatch[1] || periodMatch[2] || '').trim();
+    if (/^\d{4}[-–]\d{2,4}$/.test(res.period)) res.period = `FY ${res.period}`;
+  }
+
+  // Check remark in instruction (e.g. "remark as 'Pending from client'" or "remark: ITC difference")
+  const remarkMatch = instructionText.match(/remark\s*(?:as|is|:)?\s*["']?([^"'\n,;]+)["']?/i);
+  if (remarkMatch) {
+    res.remark = remarkMatch[1].trim();
+  }
+
+  return res;
+}
+
+// ⚡ BUILT-IN SMART HEURISTIC TEXT PARSER with Multi-Row Splitting
+function smartHeuristicTextParser(rawText, userInstructions = '') {
+  if (!rawText) return [];
+
+  // Parse any custom period or remark rules from user instruction
+  const customOverrides = extractInstructionOverrides(userInstructions);
+  const defaultFY = customOverrides.period || (document.getElementById('ai-default-fy') && document.getElementById('ai-default-fy').value.trim()) || 'FY 2025-26';
+  const defaultRemark = customOverrides.remark || '';
+
+  // 1. Split raw text by newline and also split glued inline numbering e.g. "1. Task A 2. Task B 3. Task C"
+  const rawChunks = rawText.split(/\r?\n/);
+  const individualItems = [];
+
+  rawChunks.forEach(chunk => {
+    const trimmed = chunk.trim();
+    if (!trimmed) return;
+
+    // Split on inline numbered list boundaries (e.g. " 2.", " 3)", " [4]")
+    const subItems = trimmed.split(/(?=\s+\d+[\.\)\-]\s+|\s+[•\*\–]\s+)/g);
+    subItems.forEach(sub => {
+      const cleanSub = sub.trim();
+      if (cleanSub.length > 2) {
+        individualItems.push(cleanSub);
+      }
+    });
+  });
+
+  const tasks = [];
+
+  individualItems.forEach(line => {
     // Skip common audit document headers
     if (/^(m\/s|arya associates|audit requirements|client pendency|s\.?\s*no|particulars|period|remarks|financial year|total)/i.test(line)) {
       return;
@@ -3255,24 +3338,24 @@ function smartHeuristicTextParser(rawText) {
     if (!cleaned || cleaned.length < 3) return;
 
     let period = defaultFY;
-    let remark = '';
+    let remark = defaultRemark;
 
     // Detect Periods in text (e.g. "FY 2025-26", "2024-25", "Q3", "Q4", "31-03-2026", "Apr-Mar 2026")
     const periodMatch = cleaned.match(/(?:FY\s*)?(\b20\d\d[-–]\d{2,4}\b|Q[1-4]\b|31[-/.](?:03|12|09|06)[-/.](?:20)?\d\d|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(?:[-–to]+\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)?\s*20\d\d)/i);
-    if (periodMatch) {
+    if (periodMatch && !customOverrides.period) {
       period = periodMatch[0].toUpperCase();
       if (!period.startsWith('FY ') && /20\d\d[-–]/.test(period)) period = `FY ${period}`;
     }
 
     // Detect Remarks inside parentheses or dashes e.g. "(Pending from client)" or "- with schedules"
     const remarkMatch = cleaned.match(/[\(\[](.*?)[\)\]]/) || cleaned.match(/[-–]\s*(pending.*?|received.*?|with.*?|follow up.*?|mismatch.*?)$/i);
-    if (remarkMatch) {
+    if (remarkMatch && !customOverrides.remark) {
       remark = remarkMatch[1].trim();
     }
 
     // Clean particulars (remove extracted period/remark if cleanly isolated)
     let particulars = cleaned;
-    if (remark) {
+    if (remark && !customOverrides.remark) {
       particulars = particulars.replace(/[\(\[](.*?)[\)\]]/, '').replace(/[-–]\s*(pending.*?|received.*?|with.*?|follow up.*?|mismatch.*?)$/i, '').trim();
     }
 
@@ -3280,7 +3363,7 @@ function smartHeuristicTextParser(rawText) {
       tasks.push({
         particulars: particulars,
         period: period || defaultFY,
-        remark: remark || ''
+        remark: remark || defaultRemark
       });
     }
   });
