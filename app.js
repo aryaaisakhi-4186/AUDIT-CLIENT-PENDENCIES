@@ -860,6 +860,16 @@ function switchClient(clientId) {
   appData.activeClientId = clientId;
   saveData();
   renderAll();
+  scrollToClientPage();
+}
+
+function scrollToClientPage() {
+  setTimeout(() => {
+    const target = document.querySelector('.letterhead-box') || document.getElementById('client-name-input');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 50);
 }
 
 function renderHeader() {
@@ -901,19 +911,52 @@ function updateCurrentClientYearOnly(newYear) {
 function setClientStatusFilter(filter) {
   clientStatusFilter = filter;
   
-  document.getElementById('client-filter-pending').className = filter === 'pending'
-    ? 'px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-bold text-xs shadow'
-    : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold';
+  const btnPending = document.getElementById('client-filter-pending');
+  const btnCompleted = document.getElementById('client-filter-completed');
+  const btnAll = document.getElementById('client-filter-all');
 
-  document.getElementById('client-filter-completed').className = filter === 'completed'
-    ? 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold text-xs shadow'
-    : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold';
+  if (btnPending) {
+    btnPending.className = filter === 'pending'
+      ? 'px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-bold text-xs shadow flex items-center gap-1'
+      : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1';
+  }
 
-  document.getElementById('client-filter-all').className = filter === 'all'
-    ? 'px-2.5 py-1 rounded-md bg-slate-800 text-white font-bold text-xs shadow'
-    : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold';
+  if (btnCompleted) {
+    btnCompleted.className = filter === 'completed'
+      ? 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold text-xs shadow'
+      : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold';
+  }
 
-  renderClientTabs();
+  if (btnAll) {
+    btnAll.className = filter === 'all'
+      ? 'px-2.5 py-1 rounded-md bg-slate-800 text-white font-bold text-xs shadow'
+      : 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-semibold';
+  }
+
+  // Auto-switch to and open the first matching client's page
+  if (Array.isArray(appData.clients) && appData.clients.length > 0) {
+    const currentClient = getActiveClient();
+    const currentMatches = currentClient ? (
+      filter === 'all' ? true :
+      filter === 'pending' ? !isClientCompleted(currentClient) :
+      isClientCompleted(currentClient)
+    ) : false;
+
+    if (!currentMatches) {
+      const match = appData.clients.find(c => {
+        if (filter === 'pending') return !isClientCompleted(c);
+        if (filter === 'completed') return isClientCompleted(c);
+        return true;
+      });
+      if (match) {
+        appData.activeClientId = match.id;
+        saveData();
+      }
+    }
+  }
+
+  renderAll();
+  scrollToClientPage();
 }
 
 function renderTasksTable() {
@@ -2624,7 +2667,33 @@ function setupEventListeners() {
   if (clientSearchInputEl) {
     clientSearchInputEl.addEventListener('input', (e) => {
       clientSearchQuery = e.target.value;
+      
+      // If user typed a search query, automatically open the first matching client page live!
+      if (clientSearchQuery.trim() && Array.isArray(appData.clients)) {
+        const q = clientSearchQuery.toLowerCase().trim();
+        const match = appData.clients.find(c => c.name.toLowerCase().includes(q));
+        if (match && match.id !== appData.activeClientId) {
+          appData.activeClientId = match.id;
+          saveData();
+          renderAll();
+          return;
+        }
+      }
       renderClientTabs();
+    });
+
+    clientSearchInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = (clientSearchQuery || clientSearchInputEl.value).toLowerCase().trim();
+        if (q && Array.isArray(appData.clients)) {
+          const match = appData.clients.find(c => c.name.toLowerCase().includes(q));
+          if (match) {
+            switchClient(match.id);
+            scrollToClientPage();
+          }
+        }
+      }
     });
   }
 }
