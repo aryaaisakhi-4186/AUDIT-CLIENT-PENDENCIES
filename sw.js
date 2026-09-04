@@ -1,5 +1,5 @@
 // Service Worker for AUDIT-2026 PWA (Ultra-Fast Live Updates)
-const CACHE_NAME = 'audit-2026-v2.2-fast';
+const CACHE_NAME = 'audit-2026-v3.0-ai-agent';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

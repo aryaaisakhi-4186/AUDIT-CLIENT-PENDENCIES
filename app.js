@@ -2743,14 +2743,24 @@ function initAIAgent() {
 }
 
 function openAIAgentModal() {
-  populateAITargetClients();
-  const modal = document.getElementById('ai-agent-modal');
-  if (modal) modal.classList.remove('hidden');
+  try {
+    populateAITargetClients();
+    const modal = document.getElementById('ai-agent-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+    }
+  } catch (err) {
+    console.error("Error opening AI agent modal:", err);
+  }
 }
 
 function closeAIAgentModal() {
   const modal = document.getElementById('ai-agent-modal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
 }
 
 function switchAITab(tab) {
