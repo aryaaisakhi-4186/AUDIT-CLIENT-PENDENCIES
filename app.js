@@ -2721,10 +2721,716 @@ function initMobileZoomPrevention() {
   }, false);
 }
 
+// =========================================================================
+// 🤖 AGENTIC AI AUDIT DOCUMENT SCANNER & TASK CREATOR ENGINE
+// =========================================================================
+
+const AI_SETTINGS_STORAGE_KEY = 'audit_2026_ai_agent_settings';
+let aiSelectedFile = null;
+let aiExtractedTasks = [];
+
+function initAIAgent() {
+  const savedSettings = localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
+  if (savedSettings) {
+    try {
+      const parsed = JSON.parse(savedSettings);
+      const keyInput = document.getElementById('ai-gemini-api-key');
+      const fyInput = document.getElementById('ai-default-fy');
+      if (keyInput && parsed.geminiApiKey) keyInput.value = parsed.geminiApiKey;
+      if (fyInput && parsed.defaultFY) fyInput.value = parsed.defaultFY;
+    } catch (e) {}
+  }
+}
+
+function openAIAgentModal() {
+  populateAITargetClients();
+  const modal = document.getElementById('ai-agent-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAIAgentModal() {
+  const modal = document.getElementById('ai-agent-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function switchAITab(tab) {
+  const btnUpload = document.getElementById('btn-ai-tab-upload');
+  const btnText = document.getElementById('btn-ai-tab-text');
+  const btnSettings = document.getElementById('btn-ai-tab-settings');
+
+  const viewUpload = document.getElementById('ai-view-upload');
+  const viewText = document.getElementById('ai-view-text');
+  const viewSettings = document.getElementById('ai-view-settings');
+
+  const activeClass = "px-4 py-2.5 rounded-t-xl font-black text-xs border-t border-l border-r border-slate-200 bg-white text-purple-700 shadow-sm flex items-center gap-2";
+  const inactiveClass = "px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5";
+
+  if (btnUpload) btnUpload.className = tab === 'upload' ? activeClass : inactiveClass;
+  if (btnText) btnText.className = tab === 'text' ? activeClass : inactiveClass;
+  if (btnSettings) btnSettings.className = tab === 'settings' ? activeClass : inactiveClass;
+
+  if (viewUpload) viewUpload.classList.toggle('hidden', tab !== 'upload');
+  if (viewText) viewText.classList.toggle('hidden', tab !== 'text');
+  if (viewSettings) viewSettings.classList.toggle('hidden', tab !== 'settings');
+}
+
+function populateAITargetClients() {
+  const selectUpload = document.getElementById('ai-target-client-select-upload');
+  const selectText = document.getElementById('ai-target-client-select-text');
+
+  [selectUpload, selectText].forEach(sel => {
+    if (!sel) return;
+    sel.innerHTML = '';
+    if (Array.isArray(appData.clients)) {
+      appData.clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.selected = c.id === appData.activeClientId;
+        opt.textContent = `🏢 ${c.name} (${c.fy || 'FY 2025-26'})`;
+        sel.appendChild(opt);
+      });
+    }
+  });
+}
+
+function handleAIFileSelected(event) {
+  const file = event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+
+  aiSelectedFile = file;
+
+  const card = document.getElementById('ai-selected-file-card');
+  const nameEl = document.getElementById('ai-selected-file-name');
+  const sizeEl = document.getElementById('ai-selected-file-size');
+  const thumbEl = document.getElementById('ai-file-preview-thumb');
+
+  if (card) card.classList.remove('hidden');
+  if (nameEl) nameEl.textContent = file.name;
+  if (sizeEl) sizeEl.textContent = formatBytes(file.size);
+
+  if (thumbEl) {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        thumbEl.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-xl" />`;
+      };
+      reader.readAsDataURL(file);
+    } else if (file.name.endsWith('.pdf')) {
+      thumbEl.innerHTML = '📄';
+    } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+      thumbEl.innerHTML = '📊';
+    } else {
+      thumbEl.innerHTML = '📑';
+    }
+  }
+}
+
+function clearSelectedAIFile() {
+  aiSelectedFile = null;
+  const fileInput = document.getElementById('ai-file-input');
+  const cameraInput = document.getElementById('ai-camera-input');
+  const card = document.getElementById('ai-selected-file-card');
+
+  if (fileInput) fileInput.value = '';
+  if (cameraInput) cameraInput.value = '';
+  if (card) card.classList.add('hidden');
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function saveAIEngineSettings() {
+  const keyInput = document.getElementById('ai-gemini-api-key');
+  const fyInput = document.getElementById('ai-default-fy');
+
+  const settings = {
+    geminiApiKey: keyInput ? keyInput.value.trim() : '',
+    defaultFY: fyInput ? fyInput.value.trim() : 'FY 2025-26'
+  };
+
+  try {
+    localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {}
+
+  alert("✅ AI Vision Engine settings saved successfully!");
+}
+
+function loadSampleAuditNote() {
+  const textarea = document.getElementById('ai-raw-text-input');
+  if (textarea) {
+    textarea.value = `1. Signed Balance Sheet, P&L Account, and Trial Balance (FY 2025-26) - with lead schedules
+2. Direct Bank Confirmations from HDFC Bank, SBI & ICICI (As on 31-03-2026) - pending from bank
+3. GSTR-2B vs Books Purchase Reconciliation (Apr 2025 - Mar 2026) - ITC difference of Rs. 1.25 Lakhs
+4. Form 26AS, AIS and TIS reconciliation with books TDS (FY 2025-26) - follow up with accounts
+5. Fixed Asset Register with Q3 addition invoices (FY 2025-26)
+6. Statutory Dues Challans (PF, ESIC, TDS) payment proofs (Q4 / March 2026)`;
+  }
+}
+
+function setAILoading(show, title, detail) {
+  const loader = document.getElementById('ai-agent-loading');
+  const titleEl = document.getElementById('ai-loading-step-title');
+  const detailEl = document.getElementById('ai-loading-step-detail');
+  const resultsBox = document.getElementById('ai-agent-results-box');
+
+  if (loader) loader.classList.toggle('hidden', !show);
+  if (titleEl && title) titleEl.textContent = title;
+  if (detailEl && detail) detailEl.textContent = detail;
+  if (show && resultsBox) resultsBox.classList.add('hidden');
+}
+
+// 🧠 MAIN AI FILE SCAN DISPATCHER
+async function processAIFileScan() {
+  if (!aiSelectedFile) {
+    alert("⚠️ Please choose or take a photo of a document first.");
+    return;
+  }
+
+  const file = aiSelectedFile;
+  const fileName = file.name.toLowerCase();
+
+  setAILoading(true, "🧠 AI Agent Analyzing Document...", `Reading ${file.name} with Agentic AI OCR...`);
+
+  try {
+    const savedSettings = JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY) || '{}');
+    const geminiKey = savedSettings.geminiApiKey;
+
+    // 1. EXCEL / CSV SPREADSHEETS (.xlsx, .xls, .csv)
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) {
+      await processExcelFileWithSheetJS(file);
+      return;
+    }
+
+    // 2. PDF DOCUMENTS (.pdf)
+    if (fileName.endsWith('.pdf')) {
+      if (geminiKey) {
+        await processMultimodalWithGemini(file, geminiKey);
+      } else {
+        await processPDFWithPDFJS(file);
+      }
+      return;
+    }
+
+    // 3. IMAGES / PHOTOS / HANDWRITTEN NOTES (JPG, PNG, WebP)
+    if (file.type.startsWith('image/')) {
+      if (geminiKey) {
+        await processMultimodalWithGemini(file, geminiKey);
+      } else {
+        await processImageWithTesseract(file);
+      }
+      return;
+    }
+
+    // Fallback: Read as text
+    const text = await file.text();
+    const tasks = smartHeuristicTextParser(text);
+    displayExtractedAITasks(tasks);
+
+  } catch (err) {
+    console.error("AI Scan Error:", err);
+    setAILoading(false);
+    alert(`❌ AI Processing Note:\n\n${err.message || 'Could not parse document automatically. You can paste the text directly in the Paste Text tab.'}`);
+  }
+}
+
+// 📸 GEMINI 1.5 FLASH MULTIMODAL API (Handwriting & Vision Expert)
+async function processMultimodalWithGemini(file, apiKey) {
+  setAILoading(true, "🌟 Google Gemini Vision AI Processing...", "Reading handwriting & structuring audit requirements...");
+
+  const base64Data = await fileToBase64(file);
+  const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+
+  const promptText = `You are an expert Chartered Accountant and Audit Lead for M/S. ARYA ASSOCIATES.
+Extract all audit pendencies, pending document requirements, and checklist tasks from this document/image.
+For each item, extract:
+1. "particulars": Clear, professional name of the audit requirement / document.
+2. "period": Financial period (e.g. "FY 2025-26", "Q3", "As on 31-03-2026", or default "FY 2025-26" if not specified).
+3. "remark": Any specific note, status, or follow-up remark (e.g. "Pending from client", "ITC mismatch", or leave empty if none).
+
+Return ONLY a pure, valid JSON array of objects. Do NOT include markdown blocks or any conversational text.
+Example format:
+[
+  {"particulars": "Signed Balance Sheet & P&L", "period": "FY 2025-26", "remark": "With grouping schedules"},
+  {"particulars": "Direct Bank Confirmations from HDFC", "period": "As on 31-03-2026", "remark": "Pending from accounts"}
+]`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: promptText },
+          { inline_data: { mime_type: mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2048
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error ? errorData.error.message : `Gemini API returned status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawResponseText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]
+    ? data.candidates[0].content.parts[0].text
+    : '';
+
+  const cleanedJSON = extractJSONArrayString(rawResponseText);
+  const tasks = JSON.parse(cleanedJSON);
+
+  displayExtractedAITasks(tasks);
+}
+
+// 📊 SHEETJS EXCEL PARSER (.xlsx, .xls, .csv)
+async function processExcelFileWithSheetJS(file) {
+  setAILoading(true, "📊 Parsing Excel Spreadsheet...", "Reading worksheets, rows and columns with SheetJS...");
+
+  if (typeof XLSX === 'undefined') {
+    throw new Error("SheetJS library not loaded. Please ensure internet connection or check CDN.");
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+  if (!rawRows || rawRows.length === 0) {
+    throw new Error("The selected Excel file is empty.");
+  }
+
+  const tasks = parseExcelRowsToTasks(rawRows);
+  displayExtractedAITasks(tasks);
+}
+
+function parseExcelRowsToTasks(rows) {
+  const tasks = [];
+  if (rows.length === 0) return tasks;
+
+  // Search for header row index
+  let headerIndex = -1;
+  let particularsCol = -1;
+  let periodCol = -1;
+  let remarkCol = -1;
+
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const row = rows[i];
+    if (Array.isArray(row)) {
+      row.forEach((cell, colIdx) => {
+        const text = String(cell || '').toLowerCase().trim();
+        if (text.includes('particular') || text.includes('requirement') || text.includes('document') || text.includes('task') || text.includes('item') || text.includes('description')) {
+          particularsCol = colIdx;
+          headerIndex = i;
+        }
+        if (text.includes('period') || text.includes('fy') || text.includes('year') || text.includes('quarter') || text.includes('date')) {
+          periodCol = colIdx;
+        }
+        if (text.includes('remark') || text.includes('status') || text.includes('comment') || text.includes('note')) {
+          remarkCol = colIdx;
+        }
+      });
+      if (particularsCol !== -1) break;
+    }
+  }
+
+  const startIndex = headerIndex !== -1 ? headerIndex + 1 : 0;
+
+  for (let i = startIndex; i < rows.length; i++) {
+    const row = rows[i];
+    if (!Array.isArray(row) || row.length === 0) continue;
+
+    let particulars = '';
+    let period = 'FY 2025-26';
+    let remark = '';
+
+    if (particularsCol !== -1) {
+      particulars = String(row[particularsCol] || '').trim();
+      if (periodCol !== -1 && row[periodCol]) period = String(row[periodCol]).trim();
+      if (remarkCol !== -1 && row[remarkCol]) remark = String(row[remarkCol]).trim();
+    } else {
+      // Fallback: 1st string cell is particulars, 2nd is period, 3rd is remark
+      const textCells = row.filter(c => c !== undefined && c !== null && String(c).trim() !== '');
+      if (textCells.length > 0) {
+        // Skip purely numeric S.No.
+        if (typeof textCells[0] === 'number' || /^\d+$/.test(String(textCells[0]).trim())) {
+          particulars = String(textCells[1] || '').trim();
+          period = textCells[2] ? String(textCells[2]).trim() : 'FY 2025-26';
+          remark = textCells[3] ? String(textCells[3]).trim() : '';
+        } else {
+          particulars = String(textCells[0] || '').trim();
+          period = textCells[1] ? String(textCells[1]).trim() : 'FY 2025-26';
+          remark = textCells[2] ? String(textCells[2]).trim() : '';
+        }
+      }
+    }
+
+    if (particulars && particulars.length > 1 && !/^(total|s\.?\s*no\.?|sr|#)$/i.test(particulars)) {
+      tasks.push({
+        particulars: particulars,
+        period: period || 'FY 2025-26',
+        remark: remark || ''
+      });
+    }
+  }
+
+  return tasks;
+}
+
+// 📄 PDF.JS OFFLINE PARSER
+async function processPDFWithPDFJS(file) {
+  setAILoading(true, "📄 Reading PDF Document...", "Extracting text pages with PDF.js engine...");
+
+  if (typeof pdfjsLib === 'undefined') {
+    throw new Error("PDF.js library not loaded. Check internet connection.");
+  }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+
+  const tasks = smartHeuristicTextParser(fullText);
+  displayExtractedAITasks(tasks);
+}
+
+// 📸 TESSERACT.JS CLIENT-SIDE OCR (Photos & Handwritten Notes)
+async function processImageWithTesseract(file) {
+  setAILoading(true, "📸 Scanning Handwritten Note / Image...", "Running OCR text recognition with Tesseract engine...");
+
+  if (typeof Tesseract === 'undefined') {
+    throw new Error("Tesseract.js OCR library not loaded.");
+  }
+
+  const result = await Tesseract.recognize(file, 'eng', {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        const pct = Math.round((m.progress || 0) * 100);
+        setAILoading(true, "📸 Reading Handwriting / Text...", `Recognizing letters & layout: ${pct}%`);
+      }
+    }
+  });
+
+  const rawText = result.data.text || '';
+  const tasks = smartHeuristicTextParser(rawText);
+  displayExtractedAITasks(tasks);
+}
+
+// ✍️ PROCESS DIRECT RAW TEXT / NOTES / WHATSAPP PASTE
+function processAITextScan() {
+  const textarea = document.getElementById('ai-raw-text-input');
+  const rawText = textarea ? textarea.value.trim() : '';
+
+  if (!rawText) {
+    alert("⚠️ Please paste some text, handwritten notes, or WhatsApp requirements first.");
+    return;
+  }
+
+  setAILoading(true, "🧠 Analyzing Text Structure...", "Extracting requirements, periods and remarks...");
+
+  setTimeout(() => {
+    try {
+      const tasks = smartHeuristicTextParser(rawText);
+      displayExtractedAITasks(tasks);
+    } catch (e) {
+      setAILoading(false);
+      alert("❌ Could not parse text: " + e.message);
+    }
+  }, 400);
+}
+
+// ⚡ BUILT-IN SMART HEURISTIC TEXT PARSER
+function smartHeuristicTextParser(rawText) {
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
+  const tasks = [];
+  const defaultFY = (document.getElementById('ai-default-fy') && document.getElementById('ai-default-fy').value.trim()) || 'FY 2025-26';
+
+  lines.forEach(line => {
+    // Skip common audit document headers
+    if (/^(m\/s|arya associates|audit requirements|client pendency|s\.?\s*no|particulars|period|remarks|financial year|total)/i.test(line)) {
+      return;
+    }
+
+    // Clean leading numbering (e.g. "1.", "1)", "[1]", "•", "-", "*")
+    let cleaned = line.replace(/^(\d+[\.\)\-\]\:]|\*|\-|\•|\–)\s*/, '').trim();
+    if (!cleaned || cleaned.length < 3) return;
+
+    let period = defaultFY;
+    let remark = '';
+
+    // Detect Periods in text (e.g. "FY 2025-26", "2024-25", "Q3", "Q4", "31-03-2026", "Apr-Mar 2026")
+    const periodMatch = cleaned.match(/(?:FY\s*)?(\b20\d\d[-–]\d{2,4}\b|Q[1-4]\b|31[-/.](?:03|12|09|06)[-/.](?:20)?\d\d|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(?:[-–to]+\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)?\s*20\d\d)/i);
+    if (periodMatch) {
+      period = periodMatch[0].toUpperCase();
+      if (!period.startsWith('FY ') && /20\d\d[-–]/.test(period)) period = `FY ${period}`;
+    }
+
+    // Detect Remarks inside parentheses or dashes e.g. "(Pending from client)" or "- with schedules"
+    const remarkMatch = cleaned.match(/[\(\[](.*?)[\)\]]/) || cleaned.match(/[-–]\s*(pending.*?|received.*?|with.*?|follow up.*?|mismatch.*?)$/i);
+    if (remarkMatch) {
+      remark = remarkMatch[1].trim();
+    }
+
+    // Clean particulars (remove extracted period/remark if cleanly isolated)
+    let particulars = cleaned;
+    if (remark) {
+      particulars = particulars.replace(/[\(\[](.*?)[\)\]]/, '').replace(/[-–]\s*(pending.*?|received.*?|with.*?|follow up.*?|mismatch.*?)$/i, '').trim();
+    }
+
+    if (particulars.length > 2) {
+      tasks.push({
+        particulars: particulars,
+        period: period || defaultFY,
+        remark: remark || ''
+      });
+    }
+  });
+
+  return tasks;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function extractJSONArrayString(text) {
+  if (!text) return '[]';
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if (start !== -1 && end !== -1 && end > start) {
+    return text.substring(start, end + 1);
+  }
+  return '[]';
+}
+
+// 🎯 DISPLAY EXTRACTED TASKS IN INTERACTIVE REVIEW TABLE
+function displayExtractedAITasks(tasks) {
+  setAILoading(false);
+
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    alert("⚠️ No structured audit tasks could be detected from this document. Please try a clearer image or paste text in the Paste Text tab.");
+    return;
+  }
+
+  aiExtractedTasks = tasks.map((t, idx) => ({
+    id: 'ai_task_' + idx + '_' + Date.now(),
+    checked: true,
+    particulars: t.particulars || 'Audit Requirement',
+    period: t.period || 'FY 2025-26',
+    remark: t.remark || ''
+  }));
+
+  const resultsBox = document.getElementById('ai-agent-results-box');
+  const countEl = document.getElementById('ai-extracted-count');
+
+  if (resultsBox) resultsBox.classList.remove('hidden');
+  if (countEl) countEl.textContent = aiExtractedTasks.length;
+
+  renderAIExtractedTasksTable();
+}
+
+function renderAIExtractedTasksTable() {
+  const tbody = document.getElementById('ai-extracted-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  aiExtractedTasks.forEach((task, index) => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-purple-50/40 transition";
+    tr.innerHTML = `
+      <td class="px-3 py-2 text-center">
+        <input 
+          type="checkbox" 
+          class="custom-checkbox w-4 h-4 cursor-pointer" 
+          ${task.checked ? 'checked' : ''} 
+          onchange="updateAIExtractedRowCheck(${index}, this.checked)"
+        />
+      </td>
+      <td class="px-3 py-2">
+        <input 
+          type="text" 
+          value="${escapeHtml(task.particulars)}" 
+          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-slate-900 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+          oninput="updateAIExtractedRowField(${index}, 'particulars', this.value)"
+        />
+      </td>
+      <td class="px-3 py-2">
+        <input 
+          type="text" 
+          value="${escapeHtml(task.period)}" 
+          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs font-semibold text-slate-700 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+          oninput="updateAIExtractedRowField(${index}, 'period', this.value)"
+        />
+      </td>
+      <td class="px-3 py-2">
+        <input 
+          type="text" 
+          value="${escapeHtml(task.remark)}" 
+          placeholder="Remarks..."
+          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs font-medium text-slate-700 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+          oninput="updateAIExtractedRowField(${index}, 'remark', this.value)"
+        />
+      </td>
+      <td class="px-2 py-2 text-center">
+        <button 
+          onclick="removeAIExtractedRow(${index})" 
+          class="text-red-500 hover:text-red-700 text-xs p-1 font-bold">
+          ✕
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateAIExtractedRowCheck(index, isChecked) {
+  if (aiExtractedTasks[index]) {
+    aiExtractedTasks[index].checked = isChecked;
+  }
+}
+
+function updateAIExtractedRowField(index, field, value) {
+  if (aiExtractedTasks[index]) {
+    aiExtractedTasks[index][field] = value;
+  }
+}
+
+function removeAIExtractedRow(index) {
+  aiExtractedTasks.splice(index, 1);
+  const countEl = document.getElementById('ai-extracted-count');
+  if (countEl) countEl.textContent = aiExtractedTasks.length;
+  renderAIExtractedTasksTable();
+}
+
+function toggleAllAIExtractedRows(selectAll) {
+  aiExtractedTasks.forEach(t => t.checked = selectAll);
+  renderAIExtractedTasksTable();
+}
+
+function addManualRowToAIExtracted() {
+  aiExtractedTasks.push({
+    id: 'ai_task_manual_' + Date.now(),
+    checked: true,
+    particulars: '',
+    period: 'FY 2025-26',
+    remark: ''
+  });
+  const countEl = document.getElementById('ai-extracted-count');
+  if (countEl) countEl.textContent = aiExtractedTasks.length;
+  renderAIExtractedTasksTable();
+}
+
+// 🚀 IMPORT EXTRACTED TASKS TO CLIENT DATABASE
+function importAITasksToClient(mode) {
+  const selectedTasks = aiExtractedTasks.filter(t => t.checked && t.particulars.trim() !== '');
+
+  if (selectedTasks.length === 0) {
+    alert("⚠️ Please select at least one task to import.");
+    return;
+  }
+
+  // Get target client ID based on active tab
+  const uploadSelect = document.getElementById('ai-target-client-select-upload');
+  const textSelect = document.getElementById('ai-target-client-select-text');
+  const viewUpload = document.getElementById('ai-view-upload');
+  const isUploadTab = viewUpload && !viewUpload.classList.contains('hidden');
+
+  let targetClientId = isUploadTab 
+    ? (uploadSelect ? uploadSelect.value : appData.activeClientId) 
+    : (textSelect ? textSelect.value : appData.activeClientId);
+
+  if (!targetClientId) targetClientId = appData.activeClientId;
+
+  // Format new task objects
+  const newTasks = selectedTasks.map(t => ({
+    id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
+    checked: false,
+    particulars: t.particulars.trim(),
+    period: t.period.trim() || 'FY 2025-26',
+    remark: t.remark.trim()
+  }));
+
+  if (mode === 'new_client') {
+    const clientName = prompt("🏢 Enter New Client / Entity Name for these tasks:", "NEW CLIENT ENTITY");
+    if (!clientName || !clientName.trim()) return;
+
+    const newId = 'client-' + Date.now();
+    const newClientObj = {
+      id: newId,
+      name: clientName.trim().toUpperCase(),
+      fy: selectedTasks[0].period ? `FINANCIAL YEAR ${selectedTasks[0].period.replace(/^FY\s*/i, '')}` : 'FINANCIAL YEAR 2025-26',
+      tasks: newTasks
+    };
+
+    if (!Array.isArray(appData.clients)) appData.clients = [];
+    appData.clients.push(newClientObj);
+    appData.activeClientId = newId;
+
+  } else if (mode === 'replace') {
+    const client = appData.clients.find(c => c.id === targetClientId);
+    if (!client) return;
+
+    if (!confirm(`⚠️ Replace ALL existing tasks of "${client.name}" with these ${newTasks.length} AI-extracted tasks?`)) {
+      return;
+    }
+
+    client.tasks = newTasks;
+    appData.activeClientId = targetClientId;
+
+  } else {
+    // Mode: 'append'
+    const client = appData.clients.find(c => c.id === targetClientId);
+    if (!client) return;
+
+    if (!Array.isArray(client.tasks)) client.tasks = [];
+    client.tasks.push(...newTasks);
+    appData.activeClientId = targetClientId;
+  }
+
+  saveData();
+  renderAll();
+  closeAIAgentModal();
+
+  const targetClient = getActiveClient();
+  alert(`🎉 SUCCESS!\n\n${newTasks.length} tasks successfully extracted and imported into "${targetClient ? targetClient.name : 'Client'}"!`);
+}
+
 // Start app on DOMContentLoaded
 window.addEventListener('DOMContentLoaded', () => {
   initAuth();
   initApp();
   initPWAInstallation();
   initMobileZoomPrevention();
+  initAIAgent();
 });
+

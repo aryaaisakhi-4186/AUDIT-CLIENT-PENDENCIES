@@ -11,6 +11,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <!-- html2pdf.js for Client-Side Direct Letterhead PDF Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- SheetJS for Excel / CSV Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- PDF.js for PDF Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Tesseract.js for Image / Handwritten Note OCR Scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css">
   <!-- PWA Manifest & Icons for Mobile Installation -->
@@ -200,6 +206,16 @@
         <!-- Action Buttons -->
         <div class="flex items-center gap-2 flex-wrap">
           
+          <!-- 🤖 AI Document & Image Agent Button -->
+          <button 
+            id="btn-ai-agent"
+            onclick="openAIAgentModal()" 
+            title="Agentic AI: Convert Handwritten Notes, Excel, PDF & Photos into Audit Tasks"
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-lg text-xs shadow-md border border-purple-400/50 transition cursor-pointer">
+            <span class="text-sm">🤖</span>
+            <span>AI Task Agent</span>
+          </button>
+
           <!-- 📲 1-Click Install App Button (Mobile & Desktop) -->
           <button 
             id="btn-install-pwa"
@@ -631,11 +647,21 @@
         <button 
           type="button" 
           onclick="submitQuickTaskEntry()" 
-          class="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow transition flex items-center gap-1.5">
+          class="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
           </svg>
           + Add to List
+        </button>
+
+        <!-- 🤖 AI Auto-Scan Button -->
+        <button 
+          type="button" 
+          onclick="openAIAgentModal()" 
+          title="Scan handwritten note, picture, PDF or Excel with Agentic AI"
+          class="shrink-0 px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg text-xs font-black shadow transition flex items-center gap-1.5 border border-purple-400/40 cursor-pointer">
+          <span>🤖</span>
+          <span>AI Scan Note/Doc</span>
         </button>
       </div>
 
@@ -1359,6 +1385,358 @@
           onclick="closeAuditProgressReportModal()" 
           class="px-5 py-2 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer">
           Close Report
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 🤖 AGENTIC AI AUDIT DOCUMENT SCANNER & TASK EXTRACTOR MODAL    -->
+  <!-- ============================================================== -->
+  <div id="ai-agent-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-3 sm:p-4 hidden no-print">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden border border-purple-200 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 px-6 py-4 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 border border-purple-300/40 flex items-center justify-center text-xl shadow-lg shadow-purple-900/40">
+            🤖
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base leading-tight text-white flex items-center gap-2">
+              Agentic AI Document & Task Scanner
+              <span class="text-[10px] bg-purple-500/40 text-purple-200 px-2 py-0.5 rounded-full font-black border border-purple-400/40">Smart OCR</span>
+            </h3>
+            <p class="text-xs text-purple-200">Convert Handwritten Notes, Photos, PDFs & Excel Sheets into Audit Tasks</p>
+          </div>
+        </div>
+        <button onclick="closeAIAgentModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="flex items-center border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-2 shrink-0">
+        <button 
+          id="btn-ai-tab-upload"
+          onclick="switchAITab('upload')"
+          class="px-4 py-2.5 rounded-t-xl font-black text-xs border-t border-l border-r border-slate-200 bg-white text-purple-700 shadow-sm flex items-center gap-2">
+          <span>📸 Photo / PDF / Excel / Note</span>
+        </button>
+        <button 
+          id="btn-ai-tab-text"
+          onclick="switchAITab('text')"
+          class="px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+          <span>✍️ Paste Text / Notes</span>
+        </button>
+        <button 
+          id="btn-ai-tab-settings"
+          onclick="switchAITab('settings')"
+          class="px-4 py-2.5 rounded-t-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+          <span>⚙️ AI Vision Engine</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Area (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+
+        <!-- TAB 1: FILE / IMAGE / PDF / EXCEL UPLOAD -->
+        <div id="ai-view-upload" class="space-y-4">
+          
+          <!-- Upload Drag & Drop Box -->
+          <div 
+            id="ai-drop-zone"
+            onclick="document.getElementById('ai-file-input').click()"
+            class="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 hover:bg-purple-50/80 rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 group">
+            
+            <input 
+              type="file" 
+              id="ai-file-input" 
+              class="hidden" 
+              accept="image/*,application/pdf,.xlsx,.xls,.csv"
+              onchange="handleAIFileSelected(event)"
+            />
+
+            <!-- Hidden camera file input -->
+            <input 
+              type="file" 
+              id="ai-camera-input" 
+              class="hidden" 
+              accept="image/*" 
+              capture="environment"
+              onchange="handleAIFileSelected(event)"
+            />
+
+            <div class="w-14 h-14 rounded-2xl bg-white shadow-md border border-purple-200 flex items-center justify-center text-3xl group-hover:scale-110 transition">
+              📑
+            </div>
+
+            <div>
+              <p class="font-extrabold text-sm text-slate-900">
+                Click to Upload or Drag & Drop Document
+              </p>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Supports: <strong>Handwritten Note Photos (JPG, PNG)</strong>, <strong>PDF Documents</strong>, and <strong>Excel (.xlsx, .csv)</strong>
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <button 
+                type="button" 
+                onclick="event.stopPropagation(); document.getElementById('ai-camera-input').click()" 
+                class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold rounded-xl text-xs shadow hover:from-purple-700 hover:to-indigo-700 transition flex items-center gap-1.5 cursor-pointer">
+                <span>📸</span> Take Photo with Mobile / Camera
+              </button>
+            </div>
+
+          </div>
+
+          <!-- File Selection Details Card (Visible when file is chosen) -->
+          <div id="ai-selected-file-card" class="bg-white border border-purple-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 hidden">
+            <div class="flex items-center gap-3 min-w-0">
+              <div id="ai-file-preview-thumb" class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center font-bold text-xl text-purple-700 shrink-0 overflow-hidden border border-purple-200">
+                📄
+              </div>
+              <div class="truncate">
+                <p id="ai-selected-file-name" class="font-bold text-xs text-slate-900 truncate">document.pdf</p>
+                <p id="ai-selected-file-size" class="text-[11px] text-slate-500">124 KB</p>
+              </div>
+            </div>
+            <button 
+              onclick="clearSelectedAIFile()" 
+              class="text-xs font-bold text-red-600 hover:text-red-800 underline shrink-0">
+              Remove
+            </button>
+          </div>
+
+          <!-- Target Client Selection -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Target Client to Import Tasks Into:
+            </label>
+            <select 
+              id="ai-target-client-select-upload" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+              <!-- Dynamically populated by JS -->
+            </select>
+          </div>
+
+          <!-- Start AI Scan Action Button -->
+          <button 
+            type="button" 
+            id="btn-start-ai-scan"
+            onclick="processAIFileScan()" 
+            class="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-purple-500/25 transition flex items-center justify-center gap-2 cursor-pointer">
+            <span>✨</span>
+            <span>Scan & Extract Tasks with AI Agent</span>
+          </button>
+
+        </div>
+
+        <!-- TAB 2: PASTE TEXT / NOTES -->
+        <div id="ai-view-text" class="space-y-4 hidden">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Paste Raw Notes, WhatsApp Requirements or Emails:
+              </label>
+              <div class="flex items-center gap-1.5">
+                <button 
+                  type="button" 
+                  onclick="loadSampleAuditNote()" 
+                  class="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg font-bold hover:bg-purple-100 transition">
+                  📋 Load Sample Note
+                </button>
+              </div>
+            </div>
+
+            <textarea 
+              id="ai-raw-text-input" 
+              rows="6" 
+              placeholder="Example:&#10;1. Signed balance sheet & profit loss for FY 2025-26&#10;2. Bank statement of SBI & HDFC (pending from client)&#10;3. GSTR-2B vs 3B purchase reconciliation (mismatch of 50k)&#10;4. Form 26AS AIS TDS proof"
+              class="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition leading-relaxed"></textarea>
+          </div>
+
+          <!-- Target Client Selection -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Target Client to Import Tasks Into:
+            </label>
+            <select 
+              id="ai-target-client-select-text" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+              <!-- Dynamically populated by JS -->
+            </select>
+          </div>
+
+          <!-- Process Text Action Button -->
+          <button 
+            type="button" 
+            onclick="processAITextScan()" 
+            class="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-purple-500/25 transition flex items-center justify-center gap-2 cursor-pointer">
+            <span>🧠</span>
+            <span>Analyze Text & Extract Tasks</span>
+          </button>
+        </div>
+
+        <!-- TAB 3: AI ENGINE SETTINGS -->
+        <div id="ai-view-settings" class="space-y-4 hidden">
+          <div class="bg-white border border-purple-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">⚡</span>
+              <div>
+                <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider">Multimodal AI Vision & OCR Engine</h4>
+                <p class="text-[11px] text-slate-500">Powers handwritten note reading and complex document comprehension</p>
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Google Gemini API Key (Recommended for 100% accurate Handwriting OCR)
+                </label>
+                <input 
+                  type="password" 
+                  id="ai-gemini-api-key" 
+                  placeholder="Paste your Gemini API Key (e.g. AIzaSy...)" 
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none shadow-sm"
+                />
+                <p class="text-[10px] text-slate-500 mt-1">
+                  💡 Free API Key can be generated from Google AI Studio. If left empty, built-in offline Tesseract & SheetJS engine is used automatically.
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Default Fiscal Year for Extracted Tasks
+                </label>
+                <input 
+                  type="text" 
+                  id="ai-default-fy" 
+                  value="FY 2025-26" 
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none shadow-sm"
+                />
+              </div>
+
+              <div class="pt-2 flex justify-end">
+                <button 
+                  type="button" 
+                  onclick="saveAIEngineSettings()" 
+                  class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow transition">
+                  💾 Save AI Configuration
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⏳ AI SCANNING & LOADING RADAR ANIMATION -->
+        <div id="ai-agent-loading" class="bg-white border-2 border-purple-300 rounded-2xl p-6 text-center space-y-3 shadow-md hidden">
+          <div class="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mx-auto"></div>
+          <p id="ai-loading-step-title" class="text-sm font-black text-slate-900">
+            🧠 AI Agent Scanning Document...
+          </p>
+          <p id="ai-loading-step-detail" class="text-xs text-purple-700 font-semibold animate-pulse">
+            Analyzing handwriting, table layout, particulars, periods, and remarks...
+          </p>
+        </div>
+
+        <!-- 🎯 EXTRACTED TASKS PREVIEW & REVIEW SECTION -->
+        <div id="ai-agent-results-box" class="space-y-4 hidden">
+          
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🎯</span>
+              <h4 class="text-xs font-black uppercase tracking-wider text-slate-900">
+                Extracted Tasks (<span id="ai-extracted-count" class="text-purple-700 font-extrabold">0</span> Found)
+              </h4>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button 
+                type="button" 
+                onclick="toggleAllAIExtractedRows(true)" 
+                class="px-2.5 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition">
+                ✓ Select All
+              </button>
+              <button 
+                type="button" 
+                onclick="toggleAllAIExtractedRows(false)" 
+                class="px-2.5 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition">
+                Deselect All
+              </button>
+              <button 
+                type="button" 
+                onclick="addManualRowToAIExtracted()" 
+                class="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
+                + Add Row
+              </button>
+            </div>
+          </div>
+
+          <!-- Tasks Table -->
+          <div class="border border-purple-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-purple-50 text-purple-950 font-black uppercase tracking-wider border-b border-purple-200 sticky top-0">
+                  <tr>
+                    <th class="px-3 py-2.5 w-10 text-center">✓</th>
+                    <th class="px-3 py-2.5">Audit Requirement / Particulars</th>
+                    <th class="px-3 py-2.5 w-36">Period</th>
+                    <th class="px-3 py-2.5 w-48">Remark / Status</th>
+                    <th class="px-2 py-2.5 w-10 text-center">🗑️</th>
+                  </tr>
+                </thead>
+                <tbody id="ai-extracted-table-body" class="divide-y divide-slate-100 font-medium text-slate-800">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Target Client Actions -->
+          <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <p class="text-xs font-bold text-purple-950">
+              Ready to import selected tasks into your client database:
+            </p>
+            
+            <div class="flex items-center gap-2 flex-wrap">
+              <button 
+                type="button" 
+                onclick="importAITasksToClient('append')" 
+                class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer">
+                <span>➕</span>
+                <span>Add to Selected Client</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="importAITasksToClient('new_client')" 
+                class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer">
+                <span>🏢</span>
+                <span>Create New Client with Tasks</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="importAITasksToClient('replace')" 
+                class="px-4 py-2.5 bg-white text-red-600 border border-red-300 hover:bg-red-50 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                <span>🔄</span>
+                <span>Replace Current Tasks</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between shrink-0">
+        <p class="text-[11px] text-slate-500 font-medium">100% Realtime Cloud Synced upon Import</p>
+        <button 
+          onclick="closeAIAgentModal()" 
+          class="px-5 py-2 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer">
+          Close
         </button>
       </div>
 
