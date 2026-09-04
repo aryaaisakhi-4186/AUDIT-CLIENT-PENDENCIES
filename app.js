@@ -1999,21 +1999,94 @@ function exportToExcel() {
 // =========================================================================
 
 const AUTH_STORAGE_KEY = 'audit_2026_current_user_auth';
+const AUTH_LAST_ACTIVE_KEY = 'audit_2026_last_activity_time';
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // Exactly 5 minutes (300,000 ms)
 const MASTER_ADMIN_PIN = '7860'; // Master Admin PIN
 
 let currentAuthUser = null; // Default logged off until authenticated
+let inactivityWatcherTimer = null;
+
+// Track user interaction and update last active timestamp
+function updateLastUserActivity() {
+  const now = Date.now();
+  try {
+    localStorage.setItem(AUTH_LAST_ACTIVE_KEY, String(now));
+  } catch (e) {}
+}
+
+function getLastUserActivityTime() {
+  try {
+    const saved = localStorage.getItem(AUTH_LAST_ACTIVE_KEY);
+    return saved ? parseInt(saved, 10) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function startInactivityWatcher() {
+  if (inactivityWatcherTimer) clearInterval(inactivityWatcherTimer);
+  updateLastUserActivity();
+
+  // Reset timer on any user interactions (Touch, Click, Key, Scroll, Mouse)
+  const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+  activityEvents.forEach(evt => {
+    window.addEventListener(evt, updateLastUserActivity, { passive: true });
+  });
+
+  // Watcher runs every 5 seconds to check if 5 minutes elapsed
+  inactivityWatcherTimer = setInterval(() => {
+    if (!currentAuthUser) return;
+
+    const lastActive = getLastUserActivityTime();
+    const now = Date.now();
+
+    if (lastActive && (now - lastActive >= INACTIVITY_TIMEOUT_MS)) {
+      triggerAutoLogoff();
+    }
+  }, 5000);
+}
+
+function triggerAutoLogoff() {
+  if (!currentAuthUser) return;
+
+  const userName = currentAuthUser.name || 'User';
+  currentAuthUser = null;
+
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_LAST_ACTIVE_KEY);
+  } catch (e) {}
+
+  applyAuthState();
+
+  alert(`⏱️ AUTO LOG OFF (5-Minute Inactivity):\n\nYour session was automatically logged off after 5 minutes of inactivity for security.\nPlease enter your 10-digit mobile number to login again.`);
+}
 
 function initAuth() {
-  const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (savedAuth) {
+  const lastActive = getLastUserActivityTime();
+  const now = Date.now();
+  const isSessionExpired = !lastActive || (now - lastActive >= INACTIVITY_TIMEOUT_MS);
+
+  if (isSessionExpired) {
+    // Session expired: do NOT auto-login, force clean login screen
+    currentAuthUser = null;
     try {
-      currentAuthUser = JSON.parse(savedAuth);
-    } catch (e) {
-      currentAuthUser = null;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(AUTH_LAST_ACTIVE_KEY);
+    } catch (e) {}
+  } else {
+    const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (savedAuth) {
+      try {
+        currentAuthUser = JSON.parse(savedAuth);
+      } catch (e) {
+        currentAuthUser = null;
+      }
     }
   }
 
   applyAuthState();
+  startInactivityWatcher();
 }
 
 function applyAuthState() {
@@ -2151,12 +2224,14 @@ function performMemberLogin() {
     };
   }
 
+  updateLastUserActivity();
   try {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
   } catch (e) {}
 
   applyAuthState();
   renderAll();
+  startInactivityWatcher();
 }
 
 function performAdminLogin() {
@@ -2170,11 +2245,13 @@ function performAdminLogin() {
       name: (appData.adminMaster && appData.adminMaster.name) ? appData.adminMaster.name : 'Master Admin',
       mobile: (appData.adminMaster && appData.adminMaster.mobile) ? appData.adminMaster.mobile : '9999999999'
     };
+    updateLastUserActivity();
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthUser));
     } catch (e) {}
     applyAuthState();
     renderAll();
+    startInactivityWatcher();
   } else {
     alert("❌ Incorrect Master Admin PIN. Please enter the PIN configured in User Master.");
     if (pinInput) pinInput.focus();
@@ -2185,6 +2262,7 @@ function logoutUser() {
   if (confirm("🚪 Are you sure you want to LOG OFF from AUDIT-2026?")) {
     try {
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(AUTH_LAST_ACTIVE_KEY);
     } catch (e) {}
     currentAuthUser = null;
     applyAuthState();
