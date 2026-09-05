@@ -7,6 +7,33 @@
 const STORAGE_KEY = 'audit_2026_client_pendencies_db';
 const ALARM_STORAGE_KEY = 'audit_2026_alarm_settings';
 const FIREBASE_CONFIG_KEY = 'audit_2026_firebase_config';
+const LOCAL_ACTIVE_CLIENT_KEY = 'audit_2026_my_active_client_id';
+
+// Helper: Get local device active client ID (completely independent across Admin & Team Members)
+function getActiveClientId() {
+  try {
+    const saved = localStorage.getItem(LOCAL_ACTIVE_CLIENT_KEY);
+    if (saved && Array.isArray(appData.clients) && appData.clients.some(c => c.id === saved)) {
+      return saved;
+    }
+  } catch (e) {}
+
+  if (Array.isArray(appData.clients) && appData.clients.length > 0) {
+    const fallbackId = appData.clients[0].id;
+    try { localStorage.setItem(LOCAL_ACTIVE_CLIENT_KEY, fallbackId); } catch(e) {}
+    return fallbackId;
+  }
+  return 'client-1';
+}
+
+// Helper: Set local device active client ID
+function setActiveClientId(clientId) {
+  if (!clientId) return;
+  try {
+    localStorage.setItem(LOCAL_ACTIVE_CLIENT_KEY, clientId);
+  } catch (e) {}
+  appData.activeClientId = clientId;
+}
 
 // ☁️ EMBEDDED DIRECT ONLINE CLOUD CONFIGURATION (Auto-connects on all devices)
 const DEFAULT_FIREBASE_CONFIG = {
@@ -367,13 +394,33 @@ function initFirebaseCloud() {
           return;
         }
 
-        const currentJson = JSON.stringify(appData);
-        const cloudJson = JSON.stringify(cloudData);
+        const myActiveId = getActiveClientId();
+        const currentClientsJson = JSON.stringify({
+          clients: appData.clients,
+          adminMaster: appData.adminMaster,
+          membersMaster: appData.membersMaster
+        });
+        const cloudClientsJson = JSON.stringify({
+          clients: cloudData.clients,
+          adminMaster: cloudData.adminMaster || appData.adminMaster,
+          membersMaster: cloudData.membersMaster || appData.membersMaster
+        });
 
-        // Only re-render if data is actually different
-        if (currentJson !== cloudJson) {
+        // Only re-render if shared database is actually different
+        if (currentClientsJson !== cloudClientsJson) {
           isSyncingFromCloud = true;
-          appData = cloudData;
+          appData.clients = cloudData.clients;
+          if (cloudData.adminMaster) appData.adminMaster = cloudData.adminMaster;
+          if (cloudData.membersMaster) appData.membersMaster = cloudData.membersMaster;
+
+          // Preserve local active client if it still exists
+          const clientStillExists = appData.clients.some(c => c.id === myActiveId);
+          if (clientStillExists) {
+            setActiveClientId(myActiveId);
+          } else {
+            setActiveClientId(appData.clients[0].id);
+          }
+
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
           } catch (e) {}
@@ -777,13 +824,15 @@ function getActiveClient() {
         tasks: []
       }
     ];
-    appData.activeClientId = defaultId;
+    setActiveClientId(defaultId);
     return appData.clients[0];
   }
 
-  let client = appData.clients.find(c => c.id === appData.activeClientId);
+  const currentActiveId = getActiveClientId();
+  let client = appData.clients.find(c => c.id === currentActiveId);
   if (!client) {
-    appData.activeClientId = appData.clients[0].id;
+    const fallbackId = appData.clients[0].id;
+    setActiveClientId(fallbackId);
     client = appData.clients[0];
   }
 
@@ -810,22 +859,25 @@ function renderClientTabs() {
     pendingClientsBadgeEl.textContent = pendingClientsCount;
   }
 
+  const currentActiveId = getActiveClientId();
+
   let visibleClients = appData.clients.filter(client => {
     const completed = isClientCompleted(client);
 
+    // If searching by text, filter across all clients strictly by search query
+    if (clientSearchQuery && clientSearchQuery.trim()) {
+      const q = clientSearchQuery.toLowerCase().trim();
+      return client.name.toLowerCase().includes(q);
+    }
+
     // Keep the currently active client visible so dropdown does not jump away
-    if (client.id !== appData.activeClientId) {
+    if (client.id !== currentActiveId) {
       if (clientStatusFilter === 'pending' && completed) {
         return false;
       }
       if (clientStatusFilter === 'completed' && !completed) {
         return false;
       }
-    }
-
-    if (clientSearchQuery.trim()) {
-      const q = clientSearchQuery.toLowerCase();
-      return client.name.toLowerCase().includes(q);
     }
 
     return true;
@@ -837,7 +889,7 @@ function renderClientTabs() {
       dropdown.innerHTML = `<option value="">${clientSearchQuery ? 'No matching clients found' : 'All clients completed! 🎉'}</option>`;
     } else {
       visibleClients.forEach(client => {
-        const isActive = client.id === appData.activeClientId;
+        const isActive = client.id === currentActiveId;
         const completed = isClientCompleted(client);
         const pendingCount = getClientPendingCount(client);
         
@@ -857,7 +909,7 @@ function renderClientTabs() {
 
 function switchClient(clientId) {
   if (!clientId) return;
-  appData.activeClientId = clientId;
+  setActiveClientId(clientId);
   saveData();
   renderAll();
   scrollToClientPage();
@@ -949,7 +1001,7 @@ function setClientStatusFilter(filter) {
         return true;
       });
       if (match) {
-        appData.activeClientId = match.id;
+        setActiveClientId(match.id);
         saveData();
       }
     }
@@ -1745,10 +1797,11 @@ function openAddClientModal() {
   }
 
   appData.clients.push(newClient);
-  appData.activeClientId = newId;
+  setActiveClientId(newId);
 
   saveData();
   renderAll();
+  scrollToClientPage();
 }
 
 function deleteCurrentClient() {
@@ -1772,7 +1825,7 @@ function deleteCurrentClient() {
 
   if (confirm(`Are you sure you want to delete client "${client.name}" and all its requirements?`)) {
     appData.clients = appData.clients.filter(c => c.id !== client.id);
-    appData.activeClientId = appData.clients[0].id;
+    setActiveClientId(appData.clients[0].id);
     saveData();
     renderAll();
   }
@@ -2682,6 +2735,7 @@ function fullAppResetPrompt() {
         }
       ]
     };
+    setActiveClientId(freshId);
     saveData();
     renderAll();
     alert("✅ App has been completely RESET by Admin!\n\nYou now have a fresh clean workspace ready to add your real audit clients.");
@@ -2714,6 +2768,9 @@ function restoreDataPrompt() {
         const parsed = JSON.parse(event.target.result);
         if (parsed.clients && Array.isArray(parsed.clients)) {
           appData = parsed;
+          if (appData.clients.length > 0) {
+            setActiveClientId(appData.clients[0].id);
+          }
           saveData();
           renderAll();
           alert('Backup data restored successfully!');
@@ -2760,11 +2817,14 @@ function setupEventListeners() {
       if (clientSearchQuery.trim() && Array.isArray(appData.clients)) {
         const q = clientSearchQuery.toLowerCase().trim();
         const match = appData.clients.find(c => c.name.toLowerCase().includes(q));
-        if (match && match.id !== appData.activeClientId) {
-          appData.activeClientId = match.id;
-          saveData();
-          renderAll();
-          return;
+        if (match) {
+          if (match.id !== getActiveClientId()) {
+            setActiveClientId(match.id);
+            saveData();
+            renderAll();
+            scrollToClientPage();
+            return;
+          }
         }
       }
       renderClientTabs();
@@ -2779,6 +2839,7 @@ function setupEventListeners() {
           if (match) {
             switchClient(match.id);
             scrollToClientPage();
+            clientSearchInputEl.blur();
           }
         }
       }
@@ -2944,6 +3005,7 @@ function switchAITab(tab) {
 function populateAITargetClients() {
   const selectUpload = document.getElementById('ai-target-client-select-upload');
   const selectText = document.getElementById('ai-target-client-select-text');
+  const currentActiveId = getActiveClientId();
 
   [selectUpload, selectText].forEach(sel => {
     if (!sel) return;
@@ -2952,7 +3014,7 @@ function populateAITargetClients() {
       appData.clients.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
-        opt.selected = c.id === appData.activeClientId;
+        opt.selected = c.id === currentActiveId;
         opt.textContent = `🏢 ${c.name} (${c.fy || 'FY 2025-26'})`;
         sel.appendChild(opt);
       });
@@ -3616,10 +3678,10 @@ function importAITasksToClient(mode) {
   const isUploadTab = viewUpload && !viewUpload.classList.contains('hidden');
 
   let targetClientId = isUploadTab 
-    ? (uploadSelect ? uploadSelect.value : appData.activeClientId) 
-    : (textSelect ? textSelect.value : appData.activeClientId);
+    ? (uploadSelect ? uploadSelect.value : getActiveClientId()) 
+    : (textSelect ? textSelect.value : getActiveClientId());
 
-  if (!targetClientId) targetClientId = appData.activeClientId;
+  if (!targetClientId) targetClientId = getActiveClientId();
 
   // Format new task objects
   const newTasks = selectedTasks.map(t => ({
@@ -3644,7 +3706,7 @@ function importAITasksToClient(mode) {
 
     if (!Array.isArray(appData.clients)) appData.clients = [];
     appData.clients.push(newClientObj);
-    appData.activeClientId = newId;
+    setActiveClientId(newId);
 
   } else if (mode === 'replace') {
     const client = appData.clients.find(c => c.id === targetClientId);
@@ -3655,7 +3717,7 @@ function importAITasksToClient(mode) {
     }
 
     client.tasks = newTasks;
-    appData.activeClientId = targetClientId;
+    setActiveClientId(targetClientId);
 
   } else {
     // Mode: 'append'
@@ -3664,12 +3726,13 @@ function importAITasksToClient(mode) {
 
     if (!Array.isArray(client.tasks)) client.tasks = [];
     client.tasks.push(...newTasks);
-    appData.activeClientId = targetClientId;
+    setActiveClientId(targetClientId);
   }
 
   saveData();
   renderAll();
   closeAIAgentModal();
+  scrollToClientPage();
 
   const targetClient = getActiveClient();
   alert(`🎉 SUCCESS!\n\n${newTasks.length} tasks successfully extracted and imported into "${targetClient ? targetClient.name : 'Client'}"!`);
