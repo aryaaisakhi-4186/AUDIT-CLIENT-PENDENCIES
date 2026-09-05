@@ -1507,7 +1507,7 @@ function insertTaskAfter(taskId, targetCol = 'particulars') {
 }
 
 // Task CRUD Operations
-function addSingleTask(particulars = '', period = '', remark = '', targetCol = 'particulars') {
+function addSingleTask(particulars = '', period = '', remark = '', targetCol = 'particulars', focusDestination = 'table') {
   const client = getActiveClient();
   if (!client) return;
 
@@ -1550,17 +1550,27 @@ function addSingleTask(particulars = '', period = '', remark = '', targetCol = '
   saveData();
   renderAll();
 
-  setTimeout(() => {
-    const rows = taskTableBody.querySelectorAll('tr');
-    if (rows.length > 0) {
-      const lastRow = rows[rows.length - 1];
-      const input = lastRow.querySelector(`input[data-col="${targetCol}"]`) || lastRow.querySelector('input[type="text"]');
-      if (input) {
-        input.focus();
-        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (focusDestination === 'fast_entry') {
+    // ⚡ KEEP CURSOR RIGHT IN THE FAST ENTRY PARTICULARS INPUT FOR CONTINUOUS TYPING
+    setTimeout(() => {
+      const partInput = document.getElementById('quick-entry-particulars');
+      if (partInput) {
+        partInput.focus();
       }
-    }
-  }, 60);
+    }, 40);
+  } else if (focusDestination === 'table') {
+    setTimeout(() => {
+      const rows = taskTableBody.querySelectorAll('tr');
+      if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        const input = lastRow.querySelector(`input[data-col="${targetCol}"]`) || lastRow.querySelector(`textarea[data-col="${targetCol}"]`) || lastRow.querySelector('input[type="text"]');
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }, 60);
+  }
 }
 
 function toggleTaskStatus(taskId) {
@@ -1706,10 +1716,10 @@ function submitQuickTaskEntry() {
   const period = periodInput && periodInput.value.trim() ? periodInput.value.trim() : `FY ${cleanYear}`;
   const remark = remarkInput ? remarkInput.value.trim() : '';
 
-  // Add new task to active client
-  addSingleTask(particulars, period, remark);
+  // Add new task to active client with focusDestination = 'fast_entry'
+  addSingleTask(particulars, period, remark, 'particulars', 'fast_entry');
 
-  // Clear fast entry form for next entry immediately
+  // Clear fast entry form for next entry immediately & maintain cursor
   if (partInput) {
     partInput.value = '';
     partInput.focus();
