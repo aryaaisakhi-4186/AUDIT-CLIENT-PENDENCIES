@@ -899,6 +899,8 @@ function renderClientTabs() {
         opt.textContent = `🏢 ${client.name}   [${completed ? '✓ Done' : '⏳ ' + pendingCount + ' Pending'}]`;
         dropdown.appendChild(opt);
       });
+      // Explicitly set dropdown value for full cross-platform and mobile synchronization
+      dropdown.value = currentActiveId;
     }
   }
 
@@ -907,9 +909,125 @@ function renderClientTabs() {
   }
 }
 
+// 🔍 Live Client Search Suggestions Dropdown Engine
+function renderClientSearchSuggestions(query) {
+  const container = document.getElementById('client-search-suggestions');
+  const clearBtn = document.getElementById('client-search-clear-btn');
+  if (!container) return;
+
+  const cleanQuery = (query || '').trim().toLowerCase();
+
+  // Show / Hide Clear Button
+  if (clearBtn) {
+    if (cleanQuery) {
+      clearBtn.classList.remove('hidden');
+    } else {
+      clearBtn.classList.add('hidden');
+    }
+  }
+
+  if (!Array.isArray(appData.clients) || appData.clients.length === 0) {
+    container.innerHTML = '<div class="p-3 text-center text-xs text-slate-400 font-semibold">No clients in directory</div>';
+    container.classList.remove('hidden');
+    return;
+  }
+
+  const currentActiveId = getActiveClientId();
+
+  let matches = [];
+  if (cleanQuery) {
+    matches = appData.clients.filter(c => c.name.toLowerCase().includes(cleanQuery));
+  } else {
+    // If query is empty on focus, show all clients (max 20)
+    matches = appData.clients.slice(0, 20);
+  }
+
+  if (matches.length === 0) {
+    container.innerHTML = `<div class="p-3.5 text-center text-xs text-slate-500 font-bold">❌ No clients matching "${escapeHtml(query)}"</div>`;
+    container.classList.remove('hidden');
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
+      <span>${cleanQuery ? `Matching Clients (${matches.length})` : 'All Clients Directory'}</span>
+      <span class="text-[10px] text-blue-600 font-semibold">Tap to Open</span>
+    </div>
+    ${matches.map(c => {
+      const isActive = c.id === currentActiveId;
+      const completed = isClientCompleted(c);
+      const pendingCount = getClientPendingCount(c);
+      
+      let displayName = escapeHtml(c.name);
+      if (cleanQuery) {
+        const regex = new RegExp(`(${cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        displayName = displayName.replace(regex, '<span class="bg-amber-200 text-slate-950 font-black px-0.5 rounded">$1</span>');
+      }
+
+      return `
+        <div 
+          onclick="selectClientFromSuggestion('${c.id}')"
+          class="p-2.5 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex items-center justify-between gap-2 ${isActive ? 'bg-blue-50/70 border-l-4 border-blue-600' : ''}">
+          <div class="min-w-0 flex-1 text-left">
+            <p class="text-xs font-black text-slate-900 truncate flex items-center gap-1.5">
+              <span>🏢</span> <span>${displayName}</span>
+              ${isActive ? '<span class="text-[9px] bg-blue-600 text-white font-extrabold px-1.5 py-0.2 rounded-full">ACTIVE</span>' : ''}
+            </p>
+            <p class="text-[10px] text-slate-400 font-semibold truncate mt-0.5">
+              📅 ${escapeHtml(c.fy || 'FY 2025-26')}
+            </p>
+          </div>
+          <div class="shrink-0">
+            ${completed 
+              ? '<span class="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shadow-xs">✓ Done</span>' 
+              : `<span class="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shadow-xs">⏳ ${pendingCount} Pending</span>`
+            }
+          </div>
+        </div>
+      `;
+    }).join('')}
+  `;
+
+  container.classList.remove('hidden');
+}
+
+function hideClientSearchSuggestions() {
+  const container = document.getElementById('client-search-suggestions');
+  if (container) {
+    container.classList.add('hidden');
+  }
+}
+
+function selectClientFromSuggestion(clientId) {
+  if (!clientId) return;
+  switchClient(clientId);
+  hideClientSearchSuggestions();
+  
+  const client = appData.clients.find(c => c.id === clientId);
+  if (client && clientSearchInputEl) {
+    clientSearchInputEl.value = client.name;
+    clientSearchQuery = client.name;
+    const clearBtn = document.getElementById('client-search-clear-btn');
+    if (clearBtn) clearBtn.classList.remove('hidden');
+  }
+}
+
+function clearClientSearch() {
+  if (clientSearchInputEl) {
+    clientSearchInputEl.value = '';
+    clientSearchInputEl.focus();
+  }
+  clientSearchQuery = '';
+  const clearBtn = document.getElementById('client-search-clear-btn');
+  if (clearBtn) clearBtn.classList.add('hidden');
+  hideClientSearchSuggestions();
+  renderClientTabs();
+}
+
 function switchClient(clientId) {
   if (!clientId) return;
   setActiveClientId(clientId);
+  hideClientSearchSuggestions();
   saveData();
   renderAll();
   scrollToClientPage();
@@ -2812,22 +2930,28 @@ function setupEventListeners() {
   if (clientSearchInputEl) {
     clientSearchInputEl.addEventListener('input', (e) => {
       clientSearchQuery = e.target.value;
+      renderClientSearchSuggestions(clientSearchQuery);
+      renderClientTabs();
       
-      // If user typed a search query, automatically open the first matching client page live!
+      // Auto-open client dashboard immediately if exact name or single clear match
       if (clientSearchQuery.trim() && Array.isArray(appData.clients)) {
         const q = clientSearchQuery.toLowerCase().trim();
-        const match = appData.clients.find(c => c.name.toLowerCase().includes(q));
-        if (match) {
-          if (match.id !== getActiveClientId()) {
-            setActiveClientId(match.id);
-            saveData();
-            renderAll();
-            scrollToClientPage();
-            return;
-          }
+        const exactMatch = appData.clients.find(c => c.name.toLowerCase() === q);
+        if (exactMatch && exactMatch.id !== getActiveClientId()) {
+          setActiveClientId(exactMatch.id);
+          saveData();
+          renderAll();
         }
       }
-      renderClientTabs();
+    });
+
+    clientSearchInputEl.addEventListener('focus', () => {
+      renderClientSearchSuggestions(clientSearchInputEl.value);
+    });
+
+    clientSearchInputEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderClientSearchSuggestions(clientSearchInputEl.value);
     });
 
     clientSearchInputEl.addEventListener('keydown', (e) => {
@@ -2837,11 +2961,20 @@ function setupEventListeners() {
         if (q && Array.isArray(appData.clients)) {
           const match = appData.clients.find(c => c.name.toLowerCase().includes(q));
           if (match) {
-            switchClient(match.id);
-            scrollToClientPage();
+            selectClientFromSuggestion(match.id);
             clientSearchInputEl.blur();
           }
         }
+      } else if (e.key === 'Escape') {
+        hideClientSearchSuggestions();
+      }
+    });
+
+    // Close suggestions dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('client-search-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        hideClientSearchSuggestions();
       }
     });
   }
