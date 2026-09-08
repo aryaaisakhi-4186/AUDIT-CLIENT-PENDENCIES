@@ -3124,6 +3124,211 @@ function initAIAgent() {
       if (fyInput && parsed.defaultFY) fyInput.value = parsed.defaultFY;
     } catch (e) {}
   }
+
+  // 📋 Global Clipboard Paste listener for Screenshots & Images (Win+Shift+S / PrtScn / Copy Image)
+  document.removeEventListener('paste', handleGlobalAIPaste);
+  document.addEventListener('paste', handleGlobalAIPaste);
+}
+
+// 📸 GLOBAL CLIPBOARD PASTE HANDLER FOR SCREENSHOTS
+function handleGlobalAIPaste(event) {
+  const modal = document.getElementById('ai-agent-modal');
+  const isModalOpen = modal && !modal.classList.contains('hidden') && modal.style.display !== 'none';
+
+  const clipboardData = event.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+
+  const items = clipboardData.items;
+  if (!items || items.length === 0) return;
+
+  let imageItem = null;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type && items[i].type.startsWith('image/')) {
+      imageItem = items[i];
+      break;
+    }
+  }
+
+  if (imageItem) {
+    // If modal is not open yet, open it automatically!
+    if (!isModalOpen) {
+      openAIAgentModal();
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const blob = imageItem.getAsFile();
+    if (!blob) return;
+
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2, '0') +
+                    now.getMinutes().toString().padStart(2, '0') +
+                    now.getSeconds().toString().padStart(2, '0');
+    const dateStr = now.toISOString().slice(0, 10);
+    const fileName = `Screenshot_${dateStr}_${timeStr}.png`;
+    const screenshotFile = new File([blob], fileName, { type: blob.type || 'image/png' });
+
+    loadPastedScreenshot(screenshotFile);
+  }
+}
+
+// 📋 READ SCREENSHOT DIRECTLY VIA CLIPBOARD API BUTTON
+async function pasteScreenshotFromClipboard() {
+  if (!navigator.clipboard) {
+    alert("ℹ️ Clipboard access is not supported on this browser. Kripya keyboard se Ctrl + V dabayein.");
+    return;
+  }
+
+  try {
+    if (navigator.clipboard.read) {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const clipboardItem of clipboardItems) {
+        const imageType = clipboardItem.types.find(type => type.startsWith('image/'));
+        if (imageType) {
+          const blob = await clipboardItem.getType(imageType);
+          const now = new Date();
+          const timeStr = now.getHours().toString().padStart(2, '0') +
+                          now.getMinutes().toString().padStart(2, '0') +
+                          now.getSeconds().toString().padStart(2, '0');
+          const dateStr = now.toISOString().slice(0, 10);
+          const fileName = `Screenshot_${dateStr}_${timeStr}.png`;
+          const screenshotFile = new File([blob], fileName, { type: imageType });
+          loadPastedScreenshot(screenshotFile);
+          return;
+        }
+      }
+    }
+    alert("ℹ️ Clipboard me koi screenshot ya image nahi mili.\n\nKripya pehle kisi screen ka screenshot lein (e.g. Win + Shift + S ya PrintScreen) aur fir yahan Ctrl + V dabayein.");
+  } catch (err) {
+    console.warn("Clipboard read error:", err);
+    alert("ℹ️ Clipboard permission blocked hai. Kripya keyboard se direct Ctrl + V dabakar screenshot paste karein.");
+  }
+}
+
+// 🖼️ LOAD & STORE PASTED SCREENSHOT INTO PREVIEW & CROPPING STUDIO
+function loadPastedScreenshot(screenshotFile) {
+  aiSelectedFile = screenshotFile;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+
+    // 1. Update Tab 1 (Upload File Card & Cropper Studio)
+    const card = document.getElementById('ai-selected-file-card');
+    const nameEl = document.getElementById('ai-selected-file-name');
+    const sizeEl = document.getElementById('ai-selected-file-size');
+    const thumbEl = document.getElementById('ai-file-preview-thumb');
+    const pdfControls = document.getElementById('ai-pdf-page-controls');
+    const statusBadge = document.getElementById('ai-crop-status-badge');
+
+    if (card) card.classList.remove('hidden');
+    if (nameEl) nameEl.innerHTML = `<span class="text-purple-600 font-extrabold">📋 Pasted Screenshot:</span> ${screenshotFile.name}`;
+    if (sizeEl) sizeEl.textContent = formatBytes(screenshotFile.size);
+    if (thumbEl) {
+      thumbEl.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded-xl" />`;
+    }
+    if (pdfControls) {
+      pdfControls.classList.add('hidden');
+      pdfControls.classList.remove('flex');
+    }
+    if (statusBadge) {
+      statusBadge.textContent = '📋 Screenshot Loaded - Drag box to crop or click Scan';
+    }
+
+    // Mount image in Cropper Studio
+    initCropperOnImage(dataUrl);
+
+    // 2. Update Tab 2 (Paste Text / Notes Screenshot Banner)
+    const textCard = document.getElementById('ai-text-pasted-screenshot-card');
+    const textThumb = document.getElementById('ai-text-pasted-screenshot-thumb');
+    const textInfo = document.getElementById('ai-text-pasted-screenshot-info');
+
+    if (textCard) textCard.classList.remove('hidden');
+    if (textThumb) {
+      textThumb.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded-lg" />`;
+    }
+    if (textInfo) {
+      textInfo.textContent = `${screenshotFile.name} • ${formatBytes(screenshotFile.size)} • Ready to Scan`;
+    }
+
+    showAIToast("📋 Screenshot clipboard se load ho gaya hai! Scan ya Crop karein.");
+  };
+  reader.readAsDataURL(screenshotFile);
+}
+
+// ✂️ SWITCH FROM TEXT TAB TO CROPPER STUDIO
+function openCropperForCurrentFile() {
+  switchAITab('upload');
+  const studio = document.getElementById('ai-crop-studio');
+  if (studio) {
+    studio.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (aiCropper) {
+    setTimeout(() => {
+      try { aiCropper.resize(); } catch (e) {}
+    }, 80);
+  }
+}
+
+// ❌ REMOVE PASTED SCREENSHOT
+function clearPastedScreenshot() {
+  clearSelectedAIFile();
+}
+
+// 🧠 SCAN PASTED SCREENSHOT DIRECTLY WITH AI
+async function processAIPastedScreenshotDirect() {
+  if (!aiSelectedFile) {
+    alert("⚠️ Please paste a screenshot first using Ctrl + V.");
+    return;
+  }
+
+  const instructionsText = document.getElementById('ai-user-instructions-text');
+  const instructionsUpload = document.getElementById('ai-user-instructions-upload');
+  const userInstructions = (instructionsText && instructionsText.value.trim()) 
+    || (instructionsUpload && instructionsUpload.value.trim()) 
+    || '';
+
+  setAILoading(true, "🧠 AI Agent Scanning Screenshot...", `Reading screenshot (${aiSelectedFile.name}) with Multimodal Vision AI...`);
+
+  try {
+    const savedSettings = JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY) || '{}');
+    const geminiKey = savedSettings.geminiApiKey;
+
+    let fileToScan = aiSelectedFile;
+    if (aiCropper) {
+      const croppedFile = await getCroppedScanFile();
+      if (croppedFile) {
+        fileToScan = croppedFile;
+      }
+    }
+
+    if (geminiKey) {
+      await processMultimodalWithGemini(fileToScan, geminiKey, userInstructions);
+    } else {
+      await processImageWithTesseract(fileToScan, userInstructions);
+    }
+  } catch (err) {
+    console.error("AI Screenshot Scan Error:", err);
+    setAILoading(false);
+    alert(`❌ AI Processing Note:\n\n${err.message || 'Could not scan screenshot. Try cropping it in the Crop Studio tab.'}`);
+  }
+}
+
+// 🍞 FLOATING NOTIFICATION TOAST
+function showAIToast(message) {
+  let toast = document.getElementById('ai-floating-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'ai-floating-toast';
+    toast.className = 'fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-purple-500/50 flex items-center gap-2 text-xs font-bold transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span class="text-emerald-400 text-base">✓</span> <span>${message}</span>`;
+  toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+  setTimeout(() => {
+    toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+  }, 3500);
 }
 
 function openAIAgentModal() {
@@ -3469,12 +3674,14 @@ function clearSelectedAIFile() {
   const studio = document.getElementById('ai-crop-studio');
   const cropImg = document.getElementById('ai-crop-image');
   const pdfControls = document.getElementById('ai-pdf-page-controls');
+  const textCard = document.getElementById('ai-text-pasted-screenshot-card');
 
   if (fileInput) fileInput.value = '';
   if (cameraInput) cameraInput.value = '';
   if (card) card.classList.add('hidden');
   if (studio) studio.classList.add('hidden');
   if (cropImg) cropImg.src = '';
+  if (textCard) textCard.classList.add('hidden');
   if (pdfControls) {
     pdfControls.classList.add('hidden');
     pdfControls.classList.remove('flex');
@@ -3847,8 +4054,14 @@ function processAITextScan() {
   const instructionsInput = document.getElementById('ai-user-instructions-text');
   const userInstructions = instructionsInput ? instructionsInput.value.trim() : '';
 
+  // 🚀 Smart Fallback: If user pasted a screenshot and left the textarea empty, scan the screenshot!
+  if (!rawText && aiSelectedFile) {
+    processAIPastedScreenshotDirect();
+    return;
+  }
+
   if (!rawText) {
-    alert("⚠️ Please paste some text, handwritten notes, or WhatsApp requirements first.");
+    alert("⚠️ Please paste some text/notes or paste a screenshot using Ctrl + V.");
     return;
   }
 
