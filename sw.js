@@ -1,5 +1,5 @@
 // Service Worker for AUDIT-2026 PWA (Ultra-Fast Live Updates)
-const CACHE_NAME = 'audit-2026-v3.6-screenshot-paste';
+const CACHE_NAME = 'audit-2026-v3.7-delete-all-extracted';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

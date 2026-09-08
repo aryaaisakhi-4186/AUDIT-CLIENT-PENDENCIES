@@ -67,7 +67,7 @@
         </h1>
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
           <span>Audit Requirements & Client Pendency Portal</span>
-          <span class="text-[10px] bg-purple-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-purple-400/40">v3.6</span>
+          <span class="text-[10px] bg-purple-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-purple-400/40">v3.7</span>
         </p>
       </div>
 
@@ -200,7 +200,7 @@
           </div>
           <div>
             <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              AUDIT-2026 <span class="text-xs bg-purple-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-purple-400/40">v3.6 Cloud</span>
+              AUDIT-2026 <span class="text-xs bg-purple-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-purple-400/40">v3.7 Cloud</span>
             </h1>
             <p class="text-xs text-slate-400">M/S. ARYA ASSOCIATES &bull; Audit & Client Pendency Manager</p>
           </div>
@@ -1844,24 +1844,38 @@
               </h4>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
               <button 
                 type="button" 
                 onclick="toggleAllAIExtractedRows(true)" 
-                class="px-2.5 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition">
-                ✓ Select All
+                class="px-2.5 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition flex items-center gap-1 cursor-pointer">
+                <span>✓</span> Select All
               </button>
               <button 
                 type="button" 
                 onclick="toggleAllAIExtractedRows(false)" 
-                class="px-2.5 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition">
+                class="px-2.5 py-1 text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition cursor-pointer">
                 Deselect All
               </button>
               <button 
                 type="button" 
+                onclick="deleteSelectedAIExtractedTasks()" 
+                title="Delete all selected/checked tasks in one click"
+                class="px-2.5 py-1 text-[11px] font-extrabold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center gap-1 cursor-pointer">
+                <span>🗑️</span> Delete Selected
+              </button>
+              <button 
+                type="button" 
+                onclick="deleteAllAIExtractedTasks()" 
+                title="Delete all extracted tasks in one go"
+                class="px-2.5 py-1 text-[11px] font-extrabold text-white bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-1 shadow-sm cursor-pointer">
+                <span>❌</span> Delete All
+              </button>
+              <button 
+                type="button" 
                 onclick="addManualRowToAIExtracted()" 
-                class="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
-                + Add Row
+                class="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition flex items-center gap-1 cursor-pointer">
+                <span>➕</span> Add Row
               </button>
             </div>
           </div>
@@ -1872,7 +1886,16 @@
               <table class="w-full text-left text-xs">
                 <thead class="bg-purple-50 text-purple-950 font-black uppercase tracking-wider border-b border-purple-200 sticky top-0">
                   <tr>
-                    <th class="px-3 py-2.5 w-10 text-center">✓</th>
+                    <th class="px-3 py-2.5 w-10 text-center">
+                      <input 
+                        type="checkbox" 
+                        id="ai-master-checkbox" 
+                        title="Select / Deselect All Tasks"
+                        checked 
+                        class="custom-checkbox w-4 h-4 cursor-pointer" 
+                        onchange="toggleAllAIExtractedRows(this.checked)"
+                      />
+                    </th>
                     <th class="px-3 py-2.5">Audit Requirement / Particulars</th>
                     <th class="px-3 py-2.5 w-36">Period</th>
                     <th class="px-3 py-2.5 w-48">Remark / Status</th>

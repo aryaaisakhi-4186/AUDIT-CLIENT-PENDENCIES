@@ -4266,19 +4266,34 @@ function renderAIExtractedTasksTable() {
       </td>
       <td class="px-2 py-2 text-center">
         <button 
+          type="button"
           onclick="removeAIExtractedRow(${index})" 
-          class="text-red-500 hover:text-red-700 text-xs p-1 font-bold">
+          title="Delete this row"
+          class="text-red-500 hover:text-red-700 text-xs p-1 font-bold cursor-pointer">
           ✕
         </button>
       </td>
     `;
     tbody.appendChild(tr);
   });
+
+  syncAIMasterCheckbox();
+}
+
+function syncAIMasterCheckbox() {
+  const masterCb = document.getElementById('ai-master-checkbox');
+  if (masterCb) {
+    const total = aiExtractedTasks.length;
+    const checkedCount = aiExtractedTasks.filter(t => t.checked).length;
+    masterCb.checked = total > 0 && checkedCount === total;
+    masterCb.indeterminate = checkedCount > 0 && checkedCount < total;
+  }
 }
 
 function updateAIExtractedRowCheck(index, isChecked) {
   if (aiExtractedTasks[index]) {
     aiExtractedTasks[index].checked = isChecked;
+    syncAIMasterCheckbox();
   }
 }
 
@@ -4292,12 +4307,59 @@ function removeAIExtractedRow(index) {
   aiExtractedTasks.splice(index, 1);
   const countEl = document.getElementById('ai-extracted-count');
   if (countEl) countEl.textContent = aiExtractedTasks.length;
-  renderAIExtractedTasksTable();
+  if (aiExtractedTasks.length === 0) {
+    const resultsBox = document.getElementById('ai-agent-results-box');
+    if (resultsBox) resultsBox.classList.add('hidden');
+    showAIToast("Extracted task delete ho gaya.");
+  } else {
+    renderAIExtractedTasksTable();
+  }
 }
 
 function toggleAllAIExtractedRows(selectAll) {
   aiExtractedTasks.forEach(t => t.checked = selectAll);
   renderAIExtractedTasksTable();
+}
+
+// 🗑️ DELETE ALL SELECTED ROWS IN ONE CLICK
+function deleteSelectedAIExtractedTasks() {
+  const selectedCount = aiExtractedTasks.filter(t => t.checked).length;
+  if (selectedCount === 0) {
+    alert("⚠️ Please select at least one task row to delete.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete ${selectedCount} selected task${selectedCount > 1 ? 's' : ''}?`)) {
+    aiExtractedTasks = aiExtractedTasks.filter(t => !t.checked);
+    const countEl = document.getElementById('ai-extracted-count');
+    if (countEl) countEl.textContent = aiExtractedTasks.length;
+
+    if (aiExtractedTasks.length === 0) {
+      const resultsBox = document.getElementById('ai-agent-results-box');
+      if (resultsBox) resultsBox.classList.add('hidden');
+      showAIToast("🗑️ Saare extracted tasks delete kar diye gaye.");
+    } else {
+      renderAIExtractedTasksTable();
+      showAIToast(`🗑️ ${selectedCount} tasks delete ho gaye.`);
+    }
+  }
+}
+
+// ❌ DELETE ALL EXTRACTED ROWS IN ONE GO
+function deleteAllAIExtractedTasks() {
+  if (!aiExtractedTasks || aiExtractedTasks.length === 0) {
+    alert("ℹ️ Koi extracted tasks nahi hain.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete all ${aiExtractedTasks.length} extracted tasks?`)) {
+    aiExtractedTasks = [];
+    const countEl = document.getElementById('ai-extracted-count');
+    if (countEl) countEl.textContent = '0';
+    const resultsBox = document.getElementById('ai-agent-results-box');
+    if (resultsBox) resultsBox.classList.add('hidden');
+    showAIToast("🗑️ Saara extracted data one-time me delete ho gaya.");
+  }
 }
 
 function addManualRowToAIExtracted() {
