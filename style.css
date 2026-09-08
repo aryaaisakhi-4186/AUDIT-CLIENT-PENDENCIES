@@ -500,3 +500,39 @@ html, body {
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
 }
+
+/* ========================================================= */
+/* ✂️ CROPPER.JS CUSTOM ENHANCEMENTS (Mobile-Touch Friendly) */
+/* ========================================================= */
+#ai-crop-studio .cropper-container {
+  touch-action: none !important;
+  max-width: 100% !important;
+}
+
+#ai-crop-studio .cropper-view-box {
+  outline: 2px solid #a855f7 !important; /* Purple accent border */
+  outline-color: rgba(168, 85, 247, 0.95) !important;
+}
+
+#ai-crop-studio .cropper-line {
+  background-color: #a855f7 !important;
+}
+
+#ai-crop-studio .cropper-point {
+  background-color: #f59e0b !important; /* Amber accent handles */
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Larger corner handles for easy touchscreen finger dragging */
+#ai-crop-studio .cropper-point.point-se,
+#ai-crop-studio .cropper-point.point-sw,
+#ai-crop-studio .cropper-point.point-nw,
+#ai-crop-studio .cropper-point.point-ne {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+}
+

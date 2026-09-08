@@ -17,6 +17,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Tesseract.js for Image / Handwritten Note OCR Scanning -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Cropper.js for Interactive Document Preview & Image Cropping -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css">
   <!-- PWA Manifest & Icons for Mobile Installation -->
@@ -64,7 +67,7 @@
         </h1>
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
           <span>Audit Requirements & Client Pendency Portal</span>
-          <span class="text-[10px] bg-blue-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-blue-400/40">v3.4</span>
+          <span class="text-[10px] bg-purple-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-purple-400/40">v3.5</span>
         </p>
       </div>
 
@@ -197,7 +200,7 @@
           </div>
           <div>
             <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              AUDIT-2026 <span class="text-xs bg-blue-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-blue-400/40">v3.4 Cloud</span>
+              AUDIT-2026 <span class="text-xs bg-purple-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-purple-400/40">v3.5 Cloud</span>
             </h1>
             <p class="text-xs text-slate-400">M/S. ARYA ASSOCIATES &bull; Audit & Client Pendency Manager</p>
           </div>
@@ -1521,10 +1524,83 @@
               </div>
             </div>
             <button 
+              type="button"
               onclick="clearSelectedAIFile()" 
               class="text-xs font-bold text-red-600 hover:text-red-800 underline shrink-0">
-              Remove
+              Change / Remove
             </button>
+          </div>
+
+          <!-- ✂️ DOCUMENT PREVIEW & INTERACTIVE CROP STUDIO -->
+          <div id="ai-crop-studio" class="bg-slate-950 border-2 border-purple-500 rounded-2xl overflow-hidden shadow-2xl space-y-0 hidden">
+            <!-- Studio Toolbar Header -->
+            <div class="bg-slate-900 px-3.5 py-2.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-white">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-extrabold text-white text-xs flex items-center gap-1.5">
+                  <span>✂️</span> <span>Document Preview & Crop Area:</span>
+                </span>
+                <span id="ai-crop-status-badge" class="text-[10px] bg-purple-600/60 text-purple-200 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold">
+                  Drag box to select area
+                </span>
+              </div>
+
+              <!-- Multi-Page PDF Controls (Visible only for multi-page PDFs) -->
+              <div id="ai-pdf-page-controls" class="hidden items-center gap-1.5 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+                <button type="button" onclick="changeAIPDFPage(-1)" class="px-2 py-0.5 hover:bg-slate-700 rounded text-slate-200 font-bold text-xs cursor-pointer">◀ Prev</button>
+                <span id="ai-pdf-page-indicator" class="text-[11px] font-black text-amber-400">Page 1 / 1</span>
+                <button type="button" onclick="changeAIPDFPage(1)" class="px-2 py-0.5 hover:bg-slate-700 rounded text-slate-200 font-bold text-xs cursor-pointer">Next ▶</button>
+              </div>
+
+              <!-- Crop Controls Toolbar -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button 
+                  type="button" 
+                  onclick="rotateAICropImage()" 
+                  title="Rotate 90° Clockwise (Useful for sideways mobile photos)"
+                  class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition text-xs font-bold flex items-center gap-1 border border-slate-700 cursor-pointer">
+                  <span>🔄</span> Rotate
+                </button>
+                <button 
+                  type="button" 
+                  onclick="zoomAICropImage(0.1)" 
+                  title="Zoom In"
+                  class="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition text-xs font-bold border border-slate-700 cursor-pointer">
+                  🔍+
+                </button>
+                <button 
+                  type="button" 
+                  onclick="zoomAICropImage(-0.1)" 
+                  title="Zoom Out"
+                  class="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition text-xs font-bold border border-slate-700 cursor-pointer">
+                  🔍-
+                </button>
+                <button 
+                  type="button" 
+                  onclick="resetAICropBox()" 
+                  title="Reset to Full Document"
+                  class="px-2.5 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg transition text-xs font-bold flex items-center gap-1 cursor-pointer">
+                  <span>↩️</span> Full Page
+                </button>
+              </div>
+            </div>
+
+            <!-- Cropper Canvas Container -->
+            <div class="relative bg-slate-950 w-full flex items-center justify-center overflow-hidden" style="min-height: 280px; max-height: 440px;">
+              <div class="w-full h-full max-h-[440px] flex items-center justify-center p-2 overflow-hidden">
+                <img id="ai-crop-image" src="" alt="Document Preview" class="max-w-full max-h-[420px] block" />
+              </div>
+            </div>
+
+            <!-- Bottom Crop Info Bar -->
+            <div class="bg-slate-900/90 px-3.5 py-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-300">
+              <span class="flex items-center gap-1.5">
+                <span>💡</span> <span>Crop box ke corners ko drag karke wahi part select karein jise import karna hai.</span>
+              </span>
+              <span id="ai-crop-dimensions" class="text-amber-400 font-mono font-bold text-[10px]">
+                Ready
+              </span>
+            </div>
           </div>
 
           <!-- Target Client Selection -->

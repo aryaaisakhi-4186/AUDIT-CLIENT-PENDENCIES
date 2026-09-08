@@ -3109,6 +3109,9 @@ function initMobileZoomPrevention() {
 const AI_SETTINGS_STORAGE_KEY = 'audit_2026_ai_agent_settings';
 let aiSelectedFile = null;
 let aiExtractedTasks = [];
+let aiCropper = null;
+let currentPDFDoc = null;
+let currentPDFPageNum = 1;
 
 function initAIAgent() {
   const savedSettings = localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
@@ -3163,6 +3166,12 @@ function switchAITab(tab) {
   if (viewUpload) viewUpload.classList.toggle('hidden', tab !== 'upload');
   if (viewText) viewText.classList.toggle('hidden', tab !== 'text');
   if (viewSettings) viewSettings.classList.toggle('hidden', tab !== 'settings');
+
+  if (tab === 'upload' && aiCropper) {
+    setTimeout(() => {
+      try { aiCropper.resize(); } catch (e) {}
+    }, 60);
+  }
 }
 
 function populateAITargetClients() {
@@ -3185,6 +3194,205 @@ function populateAITargetClients() {
   });
 }
 
+// ✂️ MOUNT & INITIALIZE CROPPER.JS ON IMAGE/DOCUMENT PREVIEW
+function initCropperOnImage(imageUrl) {
+  const studio = document.getElementById('ai-crop-studio');
+  const cropImg = document.getElementById('ai-crop-image');
+  const dimEl = document.getElementById('ai-crop-dimensions');
+
+  if (studio) studio.classList.remove('hidden');
+
+  if (aiCropper) {
+    try {
+      aiCropper.destroy();
+    } catch (e) {}
+    aiCropper = null;
+  }
+
+  if (!cropImg) return;
+
+  cropImg.onload = null;
+
+  const setupCropper = () => {
+    if (typeof Cropper === 'undefined') {
+      console.warn("Cropper.js library not loaded yet.");
+      return;
+    }
+    if (aiCropper) {
+      try { aiCropper.destroy(); } catch (e) {}
+      aiCropper = null;
+    }
+    aiCropper = new Cropper(cropImg, {
+      viewMode: 1,
+      dragMode: 'crop',
+      autoCropArea: 0.95,
+      restore: false,
+      guides: true,
+      center: true,
+      highlight: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+      responsive: true,
+      crop(event) {
+        if (dimEl && event.detail) {
+          const w = Math.round(event.detail.width);
+          const h = Math.round(event.detail.height);
+          dimEl.textContent = `Selected: ${w} × ${h} px`;
+        }
+      },
+      ready() {
+        if (dimEl && aiCropper) {
+          try {
+            const data = aiCropper.getData();
+            dimEl.textContent = `Selected: ${Math.round(data.width)} × ${Math.round(data.height)} px`;
+          } catch (e) {}
+        }
+      }
+    });
+  };
+
+  cropImg.onload = () => {
+    setupCropper();
+  };
+
+  cropImg.src = imageUrl;
+  if (cropImg.complete && cropImg.naturalWidth > 0) {
+    setupCropper();
+  }
+}
+
+// 📄 RENDER PDF WITH PDF.JS FOR VISUAL CROP PREVIEW
+async function loadPDFForCropPreview(file) {
+  const pdfControls = document.getElementById('ai-pdf-page-controls');
+  const pageIndicator = document.getElementById('ai-pdf-page-indicator');
+
+  if (typeof pdfjsLib === 'undefined') {
+    console.warn("PDF.js not loaded, skipping visual PDF preview.");
+    return;
+  }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    currentPDFDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    currentPDFPageNum = 1;
+
+    if (currentPDFDoc.numPages > 1) {
+      if (pdfControls) {
+        pdfControls.classList.remove('hidden');
+        pdfControls.classList.add('flex');
+      }
+    } else {
+      if (pdfControls) {
+        pdfControls.classList.add('hidden');
+        pdfControls.classList.remove('flex');
+      }
+    }
+
+    if (pageIndicator) {
+      pageIndicator.textContent = `Page 1 / ${currentPDFDoc.numPages}`;
+    }
+
+    await renderPDFPageToCropper(1);
+  } catch (err) {
+    console.error("Error loading PDF for crop preview:", err);
+  }
+}
+
+async function renderPDFPageToCropper(pageNum) {
+  if (!currentPDFDoc) return;
+  try {
+    const page = await currentPDFDoc.getPage(pageNum);
+    // Render at 2.0x scale for crystal-clear text readability in cropper
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    initCropperOnImage(dataUrl);
+
+    const pageIndicator = document.getElementById('ai-pdf-page-indicator');
+    if (pageIndicator) {
+      pageIndicator.textContent = `Page ${pageNum} / ${currentPDFDoc.numPages}`;
+    }
+  } catch (err) {
+    console.error("Error rendering PDF page to cropper:", err);
+  }
+}
+
+function changeAIPDFPage(delta) {
+  if (!currentPDFDoc) return;
+  const newPage = currentPDFPageNum + delta;
+  if (newPage >= 1 && newPage <= currentPDFDoc.numPages) {
+    currentPDFPageNum = newPage;
+    renderPDFPageToCropper(currentPDFPageNum);
+  }
+}
+
+function rotateAICropImage() {
+  if (aiCropper) {
+    aiCropper.rotate(90);
+  }
+}
+
+function zoomAICropImage(ratio) {
+  if (aiCropper) {
+    aiCropper.zoom(ratio);
+  }
+}
+
+function resetAICropBox() {
+  if (aiCropper) {
+    aiCropper.reset();
+    try {
+      const canvasData = aiCropper.getCanvasData();
+      aiCropper.setCropBoxData({
+        left: canvasData.left,
+        top: canvasData.top,
+        width: canvasData.width,
+        height: canvasData.height
+      });
+    } catch (e) {}
+  }
+}
+
+async function getCroppedScanFile() {
+  if (!aiCropper) return null;
+  return new Promise((resolve) => {
+    try {
+      const croppedCanvas = aiCropper.getCroppedCanvas({
+        maxWidth: 2400,
+        maxHeight: 2400,
+        fillColor: '#ffffff',
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+      });
+      if (!croppedCanvas) {
+        resolve(null);
+        return;
+      }
+      croppedCanvas.toBlob((blob) => {
+        if (!blob) {
+          resolve(null);
+          return;
+        }
+        const origName = aiSelectedFile ? aiSelectedFile.name.replace(/\.[^/.]+$/, "") : "scan";
+        const fileName = `${origName}_cropped.jpg`;
+        const croppedFile = new File([blob], fileName, { type: 'image/jpeg' });
+        resolve(croppedFile);
+      }, 'image/jpeg', 0.92);
+    } catch (e) {
+      console.warn("Could not get cropped canvas:", e);
+      resolve(null);
+    }
+  });
+}
+
 function handleAIFileSelected(event) {
   const file = event.target.files ? event.target.files[0] : null;
   if (!file) return;
@@ -3195,37 +3403,82 @@ function handleAIFileSelected(event) {
   const nameEl = document.getElementById('ai-selected-file-name');
   const sizeEl = document.getElementById('ai-selected-file-size');
   const thumbEl = document.getElementById('ai-file-preview-thumb');
+  const pdfControls = document.getElementById('ai-pdf-page-controls');
+  const studio = document.getElementById('ai-crop-studio');
 
   if (card) card.classList.remove('hidden');
   if (nameEl) nameEl.textContent = file.name;
   if (sizeEl) sizeEl.textContent = formatBytes(file.size);
 
+  const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+  const isSpreadsheet = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv');
+
+  if (pdfControls) {
+    pdfControls.classList.add('hidden');
+    pdfControls.classList.remove('flex');
+  }
+
   if (thumbEl) {
-    if (file.type.startsWith('image/')) {
+    if (isImage) {
       const reader = new FileReader();
       reader.onload = (e) => {
         thumbEl.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-xl" />`;
       };
       reader.readAsDataURL(file);
-    } else if (file.name.endsWith('.pdf')) {
+    } else if (isPdf) {
       thumbEl.innerHTML = '📄';
-    } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+    } else if (isSpreadsheet) {
       thumbEl.innerHTML = '📊';
     } else {
       thumbEl.innerHTML = '📑';
     }
   }
+
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      initCropperOnImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  } else if (isPdf) {
+    loadPDFForCropPreview(file);
+  } else {
+    // For Excel / CSV, hide crop studio and destroy previous cropper
+    if (studio) studio.classList.add('hidden');
+    if (aiCropper) {
+      try { aiCropper.destroy(); } catch (e) {}
+      aiCropper = null;
+    }
+    currentPDFDoc = null;
+  }
 }
 
 function clearSelectedAIFile() {
   aiSelectedFile = null;
+  if (aiCropper) {
+    try { aiCropper.destroy(); } catch (e) {}
+    aiCropper = null;
+  }
+  currentPDFDoc = null;
+  currentPDFPageNum = 1;
+
   const fileInput = document.getElementById('ai-file-input');
   const cameraInput = document.getElementById('ai-camera-input');
   const card = document.getElementById('ai-selected-file-card');
+  const studio = document.getElementById('ai-crop-studio');
+  const cropImg = document.getElementById('ai-crop-image');
+  const pdfControls = document.getElementById('ai-pdf-page-controls');
 
   if (fileInput) fileInput.value = '';
   if (cameraInput) cameraInput.value = '';
   if (card) card.classList.add('hidden');
+  if (studio) studio.classList.add('hidden');
+  if (cropImg) cropImg.src = '';
+  if (pdfControls) {
+    pdfControls.classList.add('hidden');
+    pdfControls.classList.remove('flex');
+  }
 }
 
 function formatBytes(bytes) {
@@ -3300,7 +3553,29 @@ async function processAIFileScan() {
       return;
     }
 
-    // 2. PDF DOCUMENTS (.pdf)
+    // 2. CHECK IF USER HAS CROPPED SELECTION (from Photo/Image or PDF Page preview)
+    let fileToScan = file;
+    let isCropped = false;
+    if (aiCropper) {
+      setAILoading(true, "✂️ Capturing Cropped Selection...", "Exporting high-resolution cropped document area...");
+      const croppedFile = await getCroppedScanFile();
+      if (croppedFile) {
+        fileToScan = croppedFile;
+        isCropped = true;
+      }
+    }
+
+    // If cropped area is available (from Image or PDF preview)
+    if (isCropped && fileToScan) {
+      if (geminiKey) {
+        await processMultimodalWithGemini(fileToScan, geminiKey, userInstructions);
+      } else {
+        await processImageWithTesseract(fileToScan, userInstructions);
+      }
+      return;
+    }
+
+    // 3. PDF DOCUMENTS (.pdf) - fallback if cropper not active
     if (fileName.endsWith('.pdf')) {
       if (geminiKey) {
         await processMultimodalWithGemini(file, geminiKey, userInstructions);
@@ -3310,7 +3585,7 @@ async function processAIFileScan() {
       return;
     }
 
-    // 3. IMAGES / PHOTOS / HANDWRITTEN NOTES (JPG, PNG, WebP)
+    // 4. IMAGES / PHOTOS / HANDWRITTEN NOTES (JPG, PNG, WebP) - fallback if cropper not active
     if (file.type.startsWith('image/')) {
       if (geminiKey) {
         await processMultimodalWithGemini(file, geminiKey, userInstructions);
