@@ -1312,6 +1312,41 @@ function autoResizeAllTextareas() {
   });
 }
 
+// Helper: Insert newline at cursor in any textarea and advance cursor to second line seamlessly
+function insertNewlineAtCursor(textarea) {
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const val = textarea.value;
+
+  if (typeof textarea.setRangeText === 'function') {
+    textarea.setRangeText('\n', start, end, 'end');
+  } else {
+    textarea.value = val.substring(0, start) + '\n' + val.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + 1;
+  }
+
+  autoResizeTextarea(textarea);
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  textarea.scrollTop = textarea.scrollHeight;
+}
+
+// ⚡ Fast Task Entry Remark Keyboard Handler (Ctrl+Enter = 2nd Line, Plain Enter = Add to List)
+function handleQuickEntryRemarkKey(event) {
+  if (event.key === 'Enter') {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      // 📝 Ctrl+Enter / Shift+Enter / Alt+Enter: Insert second sentence on a NEW LINE (Line break)
+      event.preventDefault();
+      event.stopPropagation();
+      insertNewlineAtCursor(event.target);
+    } else {
+      // Plain Enter key submits the entry
+      event.preventDefault();
+      submitQuickTaskEntry();
+    }
+  }
+}
+
 // ⌨️ Excel-Grade Keyboard Navigation Handler
 function handleTableInputKey(event, taskId, colName) {
   const client = getActiveClient();
@@ -1372,14 +1407,9 @@ function handleTableInputKey(event, taskId, colName) {
       // 📝 Ctrl+Enter / Shift+Enter / Alt+Enter: Insert second sentence on a NEW LINE (Line break)
       if (colName === 'remark' || colName === 'particulars') {
         event.preventDefault();
-        const textarea = event.target;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const val = textarea.value;
-        textarea.value = val.substring(0, start) + "\n" + val.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + 1;
-        autoResizeTextarea(textarea);
-        updateTaskPropertyLive(taskId, colName, textarea.value);
+        event.stopPropagation();
+        insertNewlineAtCursor(event.target);
+        updateTaskPropertyLive(taskId, colName, event.target.value);
         return;
       }
     } else {
