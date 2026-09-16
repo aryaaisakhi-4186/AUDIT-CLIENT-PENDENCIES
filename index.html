@@ -67,7 +67,7 @@
         </h1>
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
           <span>Audit Requirements & Client Pendency Portal</span>
-          <span class="text-[10px] bg-purple-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-purple-400/40">v3.7</span>
+          <span class="text-[10px] bg-purple-600/90 text-white font-extrabold px-1.5 py-0.2 rounded border border-purple-400/40">v3.8</span>
         </p>
       </div>
 
@@ -200,7 +200,7 @@
           </div>
           <div>
             <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              AUDIT-2026 <span class="text-xs bg-purple-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-purple-400/40">v3.7 Cloud</span>
+              AUDIT-2026 <span class="text-xs bg-purple-600/90 text-white font-extrabold px-2 py-0.5 rounded shadow-sm border border-purple-400/40">v3.8 Cloud</span>
             </h1>
             <p class="text-xs text-slate-400">M/S. ARYA ASSOCIATES &bull; Audit & Client Pendency Manager</p>
           </div>
@@ -261,28 +261,36 @@
             WhatsApp PDF
           </button>
 
-          <!-- Direct Download PDF Button -->
+          <!-- Direct Download PDF Button (A4) -->
           <button 
-            onclick="downloadLetterheadPDF()" 
-            title="Download Letterhead PDF File Directly"
-            class="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow transition">
-            📥 PDF
+            onclick="downloadLetterheadPDF('a4')" 
+            title="Download Official Letterhead PDF (A4 Size)"
+            class="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow transition cursor-pointer">
+            📥 PDF (A4)
+          </button>
+
+          <!-- Direct Download PDF Button (Legal) -->
+          <button 
+            onclick="downloadLetterheadPDF('legal')" 
+            title="Download Official Letterhead PDF (Legal Size)"
+            class="flex items-center gap-1 px-2.5 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-md text-xs font-bold shadow transition cursor-pointer">
+            📥 PDF (Legal)
           </button>
 
           <!-- Legal Print Button -->
           <button 
             onclick="printWithPaperSize('legal')" 
-            title="Print on LEGAL Paper (8.5 x 14 inch)"
-            class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold shadow transition">
-            📄 Legal
+            title="Print on LEGAL Paper (8.5 x 14 inch) via Printer or Save to PDF"
+            class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-bold shadow transition cursor-pointer">
+            📄 Legal Print
           </button>
 
           <!-- A4 Print Button -->
           <button 
             onclick="printWithPaperSize('a4')" 
-            title="Print on A4 Paper"
-            class="flex items-center gap-1 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-xs font-medium shadow transition">
-            A4
+            title="Print on A4 Paper via Printer or Save to PDF"
+            class="flex items-center gap-1 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-xs font-medium shadow transition cursor-pointer">
+            A4 Print
           </button>
 
           <!-- 👤 User Role / Login Badge -->
@@ -795,7 +803,7 @@
   <!-- ============================================================== -->
   <!-- 📄 OFFICIAL LETTERHEAD PDF TEMPLATE (RENDERED DIRECTLY TO PDF) -->
   <!-- ============================================================== -->
-  <div id="pdf-export-render-box" class="hidden">
+  <div id="pdf-export-render-box" style="display: none; position: fixed; top: 0; left: 0; width: 750px; background: #ffffff; z-index: 99999; margin: 0; padding: 0;">
     <!-- Content injected dynamically by JS when generating Letterhead PDF -->
   </div>
 

@@ -369,7 +369,6 @@ html, body {
 
 @media print {
   @page {
-    size: auto;
     margin: 10mm 12mm 19.05mm 12mm !important; /* 0.75 inch bottom margin */
   }
 
@@ -381,12 +380,14 @@ html, body {
     width: 100% !important;
   }
 
+  /* Completely hide all screen-only UI controls, modals, and helper bars */
   .no-print,
   .action-buttons,
   .tabs-bar,
   .client-search-bar,
   .stats-banner,
   .action-cell,
+  .cell-actions,
   .quick-tools,
   .top-navbar,
   .btn-action,
@@ -395,7 +396,24 @@ html, body {
   #whatsapp-modal,
   #alarm-modal,
   #cloud-modal,
-  #alarm-trigger-banner {
+  #alarm-trigger-banner,
+  #mobile-install-banner,
+  #auth-modal,
+  #user-master-modal,
+  #audit-progress-modal,
+  #ai-agent-modal,
+  #pdf-export-render-box {
+    display: none !important;
+  }
+
+  /* Hide master select-all checkbox header and individual row tick boxes */
+  th[data-col="select"],
+  .cell-tick-box {
+    display: none !important;
+  }
+
+  /* Hide mobile-specific badge labels in print */
+  .md\:hidden {
     display: none !important;
   }
 
@@ -408,20 +426,32 @@ html, body {
     margin: 0 !important;
   }
 
+  #audit-main-document-card {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+  }
+
   .letterhead-box {
-    border: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     background-color: #ffffff !important;
-    padding: 14px !important;
-    margin-bottom: 14px !important;
+    padding: 8px 12px 12px 12px !important;
+    margin-bottom: 12px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .letterhead-title {
-    font-size: 20pt !important;
+    font-size: 18pt !important;
     color: #000000 !important;
   }
 
   .client-name-title {
-    font-size: 22pt !important;
+    font-size: 18pt !important;
     color: #000000 !important;
     border: none !important;
     box-shadow: none !important;
@@ -430,11 +460,11 @@ html, body {
 
   .fy-badge,
   .fy-year-badge {
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     background: none !important;
     border: 1.5px solid #000000 !important;
     color: #000000 !important;
-    padding: 2px 10px !important;
+    padding: 2px 8px !important;
     display: inline-block !important;
   }
 
@@ -448,45 +478,123 @@ html, body {
     box-shadow: none !important;
   }
 
+  /* Enforce desktop table structure even on mobile viewports during print */
+  #main-audit-table,
   .audit-table {
+    display: table !important;
     width: 100% !important;
     border-collapse: collapse !important;
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
     table-layout: fixed !important;
+    border: 1px solid #000000 !important;
   }
 
-  .audit-table th,
-  .audit-table td {
+  #main-audit-table thead {
+    display: table-header-group !important;
+  }
+
+  #main-audit-table tbody {
+    display: table-row-group !important;
+  }
+
+  #main-audit-table tbody tr {
+    display: table-row !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border-bottom: 1px solid #000000 !important;
+  }
+
+  #main-audit-table th,
+  #main-audit-table td {
     border: 1px solid #000000 !important;
     padding: 6px 8px !important;
     color: #000000 !important;
+    vertical-align: top !important;
+    display: table-cell !important;
     word-break: break-word !important;
+    overflow-wrap: break-word !important;
     white-space: pre-wrap !important;
+    line-height: 1.4 !important;
   }
 
-  .audit-table th {
-    background-color: #f2f2f2 !important;
+  #main-audit-table th {
+    background-color: #f1f5f9 !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  .table-textarea,
+  /* Clear column width proportions for 100% width paper fit */
+  th[data-col="sno"],
+  .cell-desktop-sno {
+    display: table-cell !important;
+    width: 45px !important;
+    text-align: left !important;
+    font-weight: 700 !important;
+  }
+
+  th[data-col="particulars"],
+  .cell-particulars {
+    display: table-cell !important;
+    width: 46% !important;
+    text-align: left !important;
+  }
+
+  th[data-col="period"],
+  .cell-period {
+    display: table-cell !important;
+    width: 18% !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+  }
+
+  th[data-col="remark"],
+  .cell-remark {
+    display: table-cell !important;
+    width: 32% !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+  }
+
+  .table-textarea {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    font-size: inherit !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    color: inherit !important;
+    resize: none !important;
+    height: auto !important;
+    min-height: unset !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    display: block !important;
+    width: 100% !important;
+    line-height: 1.4 !important;
+  }
+
   .table-input {
     border: none !important;
     padding: 0 !important;
     background: transparent !important;
     font-size: inherit !important;
-    resize: none !important;
-  }
-
-  .custom-checkbox {
-    border: 1px solid #000000 !important;
-    width: 14px !important;
-    height: 14px !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    color: inherit !important;
+    width: 100% !important;
   }
 
   .print-footer {
-    display: none !important; /* Bottom completely clean */
+    display: none !important;
   }
 }
 

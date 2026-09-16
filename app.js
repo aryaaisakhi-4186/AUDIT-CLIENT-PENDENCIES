@@ -522,6 +522,24 @@ function closeCloudModal() {
 // 📄 OFFICIAL LETTERHEAD PDF ENGINE & DIRECT WHATSAPP SHARING
 // =========================================================================
 
+// Helper: Format multi-line text cleanly into discrete block elements for HTML2PDF rendering without line overlap
+function formatMultilineTextForPDF(text, placeholder = '-') {
+  if (!text || !String(text).trim()) {
+    return `<span style="color: #94a3b8; font-style: italic;">${placeholder}</span>`;
+  }
+  // Normalize Windows CRLF (\r\n) and legacy CR (\r) to standard LF (\n)
+  const normalized = String(text).trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalized.split('\n');
+  
+  return lines.map(line => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      return `<div style="min-height: 8px; line-height: 1.45;">&nbsp;</div>`;
+    }
+    return `<div style="margin: 0 0 2px 0; padding: 0; line-height: 1.45; word-break: break-word; overflow-wrap: break-word;">${escapeHtml(trimmedLine)}</div>`;
+  }).join('');
+}
+
 // Generate High-Definition Printable Letterhead HTML Structure (Compact & Professional)
 function generateLetterheadHTML() {
   const client = getActiveClient();
@@ -545,26 +563,23 @@ function generateLetterheadHTML() {
     `;
   } else {
     tasksToInclude.forEach((task, index) => {
-      // If user wrote something in remark, show exact text; otherwise leave completely blank
-      const userRemark = (task.remark && task.remark.trim()) ? escapeHtml(task.remark.trim()) : '';
-
       tableRowsHTML += `
         <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; page-break-inside: avoid !important; break-inside: avoid !important;">
-          <!-- S. NO. (Left Aligned) -->
-          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 42px; vertical-align: middle; page-break-inside: avoid;">
+          <!-- S. NO. (Left Aligned & Top Aligned) -->
+          <td style="padding: 7px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 38px; vertical-align: top; page-break-inside: avoid;">
             ${index + 1}
           </td>
-          <!-- PARTICULARS (Left Aligned & Multi-line Support) -->
-          <td style="padding: 6px 8px; text-align: left; font-weight: 700; color: #0f172a; font-size: 10px; border-right: 1px solid #cbd5e1; line-height: 1.35; word-break: break-word; vertical-align: middle; white-space: pre-wrap; page-break-inside: avoid;">
-            ${escapeHtml(task.particulars || '')}
+          <!-- PARTICULARS (Left Aligned & Multi-line Clean Support) -->
+          <td style="padding: 7px 10px; text-align: left; font-weight: 700; color: #0f172a; font-size: 9.5px; border-right: 1px solid #cbd5e1; line-height: 1.45; word-break: break-word; overflow-wrap: break-word; vertical-align: top; page-break-inside: avoid;">
+            ${formatMultilineTextForPDF(task.particulars || '', '-')}
           </td>
-          <!-- PERIOD (Left Aligned & Clean Single-line) -->
-          <td style="padding: 6px 8px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 170px; white-space: nowrap; vertical-align: middle; page-break-inside: avoid;">
-            ${escapeHtml(task.period || cleanYear)}
+          <!-- PERIOD (Left Aligned & Top Aligned) -->
+          <td style="padding: 7px 10px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 110px; line-height: 1.4; word-break: break-word; vertical-align: top; page-break-inside: avoid;">
+            ${formatMultilineTextForPDF(task.period || cleanYear, cleanYear)}
           </td>
-          <!-- STATUS / REMARKS (Left Aligned & Multi-line Support with Ctrl+Enter) -->
-          <td style="padding: 6px 8px; text-align: left; font-size: 9.5px; color: #334155; font-weight: 600; line-height: 1.35; word-break: break-word; width: 165px; vertical-align: middle; white-space: pre-wrap; page-break-inside: avoid;">
-            ${userRemark}
+          <!-- STATUS / REMARKS (Spacious 250px Width, Top Aligned, Discrete Lines - Zero Overlap) -->
+          <td style="padding: 7px 10px; text-align: left; font-size: 9px; color: #1e293b; font-weight: 600; line-height: 1.45; word-break: break-word; overflow-wrap: break-word; width: 250px; vertical-align: top; page-break-inside: avoid;">
+            ${formatMultilineTextForPDF(task.remark || '', '-')}
           </td>
         </tr>
       `;
@@ -572,7 +587,7 @@ function generateLetterheadHTML() {
   }
 
   return `
-    <div id="pdf-letterhead-content" style="font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; padding: 16px 20px; width: 100%; box-sizing: border-box; position: relative;">
+    <div id="pdf-letterhead-content" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #ffffff; color: #0f172a; padding: 16px 20px; width: 750px; max-width: 750px; box-sizing: border-box; margin: 0; position: relative;">
       
       <!-- LETTERHEAD TOP BRANDING -->
       <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid;">
@@ -610,20 +625,20 @@ function generateLetterheadHTML() {
         </p>
       </div>
 
-      <!-- AUDIT CHECKLIST TABLE (All Columns Left Aligned) -->
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 10px; table-layout: fixed;">
+      <!-- AUDIT CHECKLIST TABLE (Fixed 750px Width, Balanced Columns) -->
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 9.5px; table-layout: fixed;">
         <thead>
           <tr style="background-color: #0f172a; color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
-            <th style="padding: 6px 8px; text-align: left; width: 42px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 7px 8px; text-align: left; width: 38px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               S. No.
             </th>
-            <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 7px 10px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PARTICULARS OF AUDIT REQUIREMENT
             </th>
-            <th style="padding: 6px 8px; text-align: left; width: 170px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 7px 10px; text-align: left; width: 110px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PERIOD
             </th>
-            <th style="padding: 6px 8px; text-align: left; width: 165px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+            <th style="padding: 7px 10px; text-align: left; width: 250px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
               STATUS / REMARKS
             </th>
           </tr>
@@ -639,27 +654,44 @@ function generateLetterheadHTML() {
   `;
 }
 
-// Download Letterhead PDF File directly to Computer / Mobile (0.75" Bottom Margin & No Row Slicing)
-async function downloadLetterheadPDF() {
+// Download Letterhead PDF File directly to Computer / Mobile (0.75" Bottom Margin & No Overlapping Lines)
+async function downloadLetterheadPDF(paperSize = 'a4') {
   const client = getActiveClient();
   if (!client) return;
 
   const renderBox = document.getElementById('pdf-export-render-box');
   if (!renderBox) return;
 
+  // Insert generated letterhead HTML
   renderBox.innerHTML = generateLetterheadHTML();
-  renderBox.classList.remove('hidden');
+
+  // Position renderBox fixed at origin (0, 0) with exact 750px width, clean background, highest z-index
+  renderBox.style.cssText = 'position: fixed !important; top: 0px !important; left: 0px !important; width: 750px !important; max-width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
+
+  // Allow DOM to compute layout and font metrics cleanly before snapshot
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const element = document.getElementById('pdf-letterhead-content');
   const safeClientName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `Audit_Pendency_Letterhead_${safeClientName}.pdf`;
+  const isLegal = String(paperSize).toLowerCase() === 'legal';
+  const sizeLabel = isLegal ? 'Legal' : 'A4';
+  const fileName = `Audit_Pendency_Letterhead_${sizeLabel}_${safeClientName}.pdf`;
 
   const opt = {
     margin: [10, 10, 19.05, 10], // 19.05mm = exactly 0.75 inch bottom margin!
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2.5, useCORS: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      logging: false,
+      letterRendering: true,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
+    },
+    jsPDF: { unit: 'mm', format: isLegal ? 'legal' : 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
   };
 
@@ -669,12 +701,12 @@ async function downloadLetterheadPDF() {
     console.error('PDF generation error:', err);
     alert('PDF generated. Check your downloads.');
   } finally {
-    renderBox.classList.add('hidden');
+    renderBox.style.cssText = 'display: none !important;';
     renderBox.innerHTML = '';
   }
 }
 
-// Share Official Letterhead PDF on WhatsApp (0.75" Bottom Margin & No Row Slicing)
+// Share Official Letterhead PDF on WhatsApp (0.75" Bottom Margin & No Overlapping Lines)
 async function shareLetterheadPDFOnWhatsApp() {
   const client = getActiveClient();
   if (!client) return;
@@ -687,7 +719,10 @@ async function shareLetterheadPDFOnWhatsApp() {
   if (!renderBox) return;
 
   renderBox.innerHTML = generateLetterheadHTML();
-  renderBox.classList.remove('hidden');
+  renderBox.style.cssText = 'position: fixed !important; top: 0px !important; left: 0px !important; width: 750px !important; max-width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
+
+  // Allow DOM to compute layout and font metrics cleanly before snapshot
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const element = document.getElementById('pdf-letterhead-content');
   const safeClientName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
@@ -697,7 +732,16 @@ async function shareLetterheadPDFOnWhatsApp() {
     margin: [10, 10, 19.05, 10], // 19.05mm = exactly 0.75 inch bottom margin!
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2.5, useCORS: true, logging: false },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      logging: false,
+      letterRendering: true,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
   };
@@ -728,9 +772,9 @@ async function shareLetterheadPDFOnWhatsApp() {
   } catch (err) {
     console.error('WhatsApp PDF share error:', err);
     // Fallback: download PDF
-    await downloadLetterheadPDF();
+    await downloadLetterheadPDF('a4');
   } finally {
-    renderBox.classList.add('hidden');
+    renderBox.style.cssText = 'display: none !important;';
     renderBox.innerHTML = '';
     if (shareBtn) shareBtn.innerHTML = `Send Letterhead PDF`;
     closeWhatsAppModal();
@@ -2165,9 +2209,9 @@ function printWithPaperSize(paperSize = 'legal') {
   }
 
   if (paperSize === 'legal') {
-    printStyle.innerHTML = `@page { size: legal portrait; margin: 12mm 15mm 15mm 15mm; }`;
+    printStyle.innerHTML = `@page { size: legal portrait; margin: 10mm 12mm 19.05mm 12mm !important; }`;
   } else {
-    printStyle.innerHTML = `@page { size: A4 portrait; margin: 12mm 15mm 15mm 15mm; }`;
+    printStyle.innerHTML = `@page { size: A4 portrait; margin: 10mm 12mm 19.05mm 12mm !important; }`;
   }
 
   window.print();
