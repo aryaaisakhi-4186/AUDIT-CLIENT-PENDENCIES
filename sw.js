@@ -1,5 +1,5 @@
 // Service Worker for AUDIT-2026 PWA (Ultra-Fast Live Updates)
-const CACHE_NAME = 'audit-2026-v3.9-pdf-perfect-alignment';
+const CACHE_NAME = 'audit-2026-v4.0-pdf-margin-fix';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

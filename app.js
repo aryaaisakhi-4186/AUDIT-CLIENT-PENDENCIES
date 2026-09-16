@@ -566,7 +566,7 @@ function generateLetterheadHTML() {
       tableRowsHTML += `
         <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; page-break-inside: avoid !important; break-inside: avoid !important;">
           <!-- S. NO. (Left Aligned & Top Aligned) -->
-          <td style="padding: 7px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 38px; vertical-align: top; page-break-inside: avoid;">
+          <td style="padding: 7px 8px; text-align: left; font-weight: 700; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 36px; vertical-align: top; page-break-inside: avoid;">
             ${index + 1}
           </td>
           <!-- PARTICULARS (Left Aligned & Multi-line Clean Support) -->
@@ -574,11 +574,11 @@ function generateLetterheadHTML() {
             ${formatMultilineTextForPDF(task.particulars || '', '-')}
           </td>
           <!-- PERIOD (Left Aligned & Top Aligned) -->
-          <td style="padding: 7px 10px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 110px; line-height: 1.4; word-break: break-word; vertical-align: top; page-break-inside: avoid;">
+          <td style="padding: 7px 10px; text-align: left; font-weight: 600; color: #334155; font-size: 9.5px; border-right: 1px solid #cbd5e1; width: 105px; line-height: 1.4; word-break: break-word; vertical-align: top; page-break-inside: avoid;">
             ${formatMultilineTextForPDF(task.period || cleanYear, cleanYear)}
           </td>
-          <!-- STATUS / REMARKS (Spacious 250px Width, Top Aligned, Discrete Lines - Zero Overlap) -->
-          <td style="padding: 7px 10px; text-align: left; font-size: 9px; color: #1e293b; font-weight: 600; line-height: 1.45; word-break: break-word; overflow-wrap: break-word; width: 250px; vertical-align: top; page-break-inside: avoid;">
+          <!-- STATUS / REMARKS (Spacious 225px Width, Top Aligned, Discrete Lines - Zero Overlap) -->
+          <td style="padding: 7px 10px; text-align: left; font-size: 9px; color: #1e293b; font-weight: 600; line-height: 1.45; word-break: break-word; overflow-wrap: break-word; width: 225px; vertical-align: top; page-break-inside: avoid;">
             ${formatMultilineTextForPDF(task.remark || '', '-')}
           </td>
         </tr>
@@ -587,7 +587,7 @@ function generateLetterheadHTML() {
   }
 
   return `
-    <div id="pdf-letterhead-content" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #ffffff; color: #0f172a; padding: 16px 20px; width: 750px; max-width: 750px; box-sizing: border-box; margin: 0; position: relative;">
+    <div id="pdf-letterhead-content" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #ffffff; color: #0f172a; padding: 12px 14px; width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; position: relative;">
       
       <!-- LETTERHEAD TOP BRANDING -->
       <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid;">
@@ -601,7 +601,7 @@ function generateLetterheadHTML() {
       </div>
 
       <!-- CLIENT & DATE METADATA BOX -->
-      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; page-break-inside: avoid; break-inside: avoid;">
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; page-break-inside: avoid; break-inside: avoid; box-sizing: border-box;">
         <div style="flex: 1;">
           <p style="margin: 0 0 2px 0; font-size: 8.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">TO (CLIENT / ENTITY NAME):</p>
           <h2 style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px;">
@@ -625,20 +625,20 @@ function generateLetterheadHTML() {
         </p>
       </div>
 
-      <!-- AUDIT CHECKLIST TABLE (Fixed 750px Width, Balanced Columns) -->
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 9.5px; table-layout: fixed;">
+      <!-- AUDIT CHECKLIST TABLE (100% Full Width, Balanced Columns) -->
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #0f172a; margin-bottom: 0; font-size: 9.5px; table-layout: fixed; box-sizing: border-box;">
         <thead>
           <tr style="background-color: #0f172a; color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
-            <th style="padding: 7px 8px; text-align: left; width: 38px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 7px 8px; text-align: left; width: 36px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               S. No.
             </th>
             <th style="padding: 7px 10px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PARTICULARS OF AUDIT REQUIREMENT
             </th>
-            <th style="padding: 7px 10px; text-align: left; width: 110px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
+            <th style="padding: 7px 10px; text-align: left; width: 105px; font-size: 9px; font-weight: 900; text-transform: uppercase; border-right: 1px solid #334155;">
               PERIOD
             </th>
-            <th style="padding: 7px 10px; text-align: left; width: 250px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+            <th style="padding: 7px 10px; text-align: left; width: 225px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
               STATUS / REMARKS
             </th>
           </tr>
@@ -665,8 +665,8 @@ async function downloadLetterheadPDF(paperSize = 'a4') {
   // Insert generated letterhead HTML
   renderBox.innerHTML = generateLetterheadHTML();
 
-  // Position renderBox fixed at origin (0, 0) with exact 750px width, clean background, highest z-index
-  renderBox.style.cssText = 'position: fixed !important; top: 0px !important; left: 0px !important; width: 750px !important; max-width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
+  // Position renderBox at origin (0, 0) with 700px width matching 190mm printable area
+  renderBox.style.cssText = 'position: absolute !important; top: 0px !important; left: 0px !important; width: 700px !important; max-width: 700px !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
 
   // Allow DOM to compute layout and font metrics cleanly before snapshot
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -715,7 +715,7 @@ async function shareLetterheadPDFOnWhatsApp() {
   if (!renderBox) return;
 
   renderBox.innerHTML = generateLetterheadHTML();
-  renderBox.style.cssText = 'position: fixed !important; top: 0px !important; left: 0px !important; width: 750px !important; max-width: 750px !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
+  renderBox.style.cssText = 'position: absolute !important; top: 0px !important; left: 0px !important; width: 700px !important; max-width: 700px !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
 
   // Allow DOM to compute layout and font metrics cleanly before snapshot
   await new Promise(resolve => setTimeout(resolve, 100));
