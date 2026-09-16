@@ -685,11 +685,7 @@ async function downloadLetterheadPDF(paperSize = 'a4') {
       scale: 2, 
       useCORS: true, 
       logging: false,
-      letterRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      x: 0,
-      y: 0
+      letterRendering: true
     },
     jsPDF: { unit: 'mm', format: isLegal ? 'legal' : 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
@@ -736,11 +732,7 @@ async function shareLetterheadPDFOnWhatsApp() {
       scale: 2, 
       useCORS: true, 
       logging: false,
-      letterRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      x: 0,
-      y: 0
+      letterRendering: true
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'table'] }
